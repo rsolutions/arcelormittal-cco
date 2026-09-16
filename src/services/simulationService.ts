@@ -99,7 +99,7 @@ function buildInitialState(): CcoState {
       segmentsOccupied: 0,
       criticalAlarms: 0,
       devicesOffline: 0,
-      stationsOperational: `${STATIONS.length}/${STATIONS.length}`,
+      stationsOperational: `${YARDS.length}/${YARDS.length}`,
       averageSpeed: 0,
       punctuality: 96.4,
     },
@@ -398,7 +398,6 @@ class SimulationEngine {
     const criticalAlarms = this.state.alarms.filter(
       (a) => a.severity === "CRITICO" && !a.resolved,
     ).length;
-    const operational = this.state.stations.filter((s) => s.status === "OPERACIONAL").length;
 
     this.state.kpis = {
       trainsRunning: trains.filter((t) => t.status !== "PARADO").length,
@@ -406,7 +405,7 @@ class SimulationEngine {
       segmentsOccupied: this.state.segments.filter((s) => s.status === "OCUPADO").length,
       criticalAlarms,
       devicesOffline: offline,
-      stationsOperational: `${operational}/${this.state.stations.length}`,
+      stationsOperational: `${this.state.yards.length}/${this.state.yards.length}`,
       averageSpeed: Math.round(trains.reduce((sum, t) => sum + t.speed, 0) / trains.length),
       punctuality: Math.max(
         70,
@@ -515,19 +514,19 @@ class SimulationEngine {
         break;
       }
       case "TRECHO_OCUPADO": {
-        const segment = this.state.segments.find((s) => s.id === "T-14");
+        const segment = this.state.segments.find((s) => s.id === "T-08");
         if (segment) segment.status = "FALHA";
         this.raiseAlarm(
           "OCUPACAO_INESPERADA",
           "ALTO",
-          "T-14",
+          "T-08",
           "TRECHO",
-          "Ocupação inesperada — Trecho T-14",
+          "Ocupação inesperada — Trecho T-08",
         );
         break;
       }
       case "PERDA_COMUNICACAO": {
-        const signal = this.state.signals.find((s) => s.id === "S-303");
+        const signal = this.state.signals.find((s) => s.id === "S-109");
         if (signal) {
           signal.status = "OFFLINE";
           signal.aspect = "CINZA";
@@ -538,21 +537,21 @@ class SimulationEngine {
         this.raiseAlarm(
           "SEM_COMUNICACAO",
           "ALTO",
-          "S-303",
+          "S-109",
           "SINAL",
-          "Equipamento S-303 sem comunicação",
+          "Equipamento S-109 sem comunicação",
         );
         break;
       }
       case "INTERDICAO": {
-        const segment = this.state.segments.find((s) => s.id === "T-19");
+        const segment = this.state.segments.find((s) => s.id === "T-06");
         if (segment) segment.status = "MANUTENCAO";
         this.raiseAlarm(
           "INTERDICAO",
           "MEDIO",
-          "T-19",
+          "T-06",
           "TRECHO",
-          "Trecho T-19 interditado para manutenção",
+          "Trecho T-06 interditado para manutenção",
         );
         break;
       }

@@ -84,6 +84,10 @@ function CcoPanel() {
     if (station) return selectAndFocus({ kind: "ESTACAO", id: station.id });
     const sw = state.switches.find((s) => s.id.toUpperCase().includes(term));
     if (sw) return selectAndFocus({ kind: "AMV", id: sw.id });
+    const yard = state.yards.find(
+      (item) => item.name.toUpperCase().includes(term) || item.id.toUpperCase().includes(term),
+    );
+    if (yard) return selectAndFocus({ kind: "PATIO", id: yard.id });
     const segment = state.segments.find((s) => s.id.toUpperCase().includes(term));
     if (segment) return selectAndFocus({ kind: "TRECHO", id: segment.id });
     const km = Number(term.replace(/[^0-9]/g, ""));

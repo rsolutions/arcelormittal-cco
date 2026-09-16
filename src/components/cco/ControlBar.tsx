@@ -18,10 +18,8 @@ const SCENARIOS: { id: ScenarioId; label: string }[] = [
 ];
 
 const LINES: { id: MapFilters["line"]; label: string }[] = [
-  { id: "ALL", label: "Todas as linhas" },
-  { id: "L1", label: "Linha 1 — Norte" },
-  { id: "L2", label: "Linha 2 — Sul" },
-  { id: "RN", label: "Ramal Oeste" },
+  { id: "ALL", label: "Toda a linha" },
+  { id: "L1", label: "Corredor principal" },
 ];
 
 const TOGGLES: { key: keyof MapFilters; label: string }[] = [
