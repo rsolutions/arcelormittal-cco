@@ -201,9 +201,4 @@ function CcoPanel() {
       </div>
     </div>
   );
-
-  function KpiRow() {
-    const { KpiBar } = require("@/components/cco/KpiBar");
-    return <KpiBar kpis={state.kpis} />;
-  }
 }
