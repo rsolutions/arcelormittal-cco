@@ -44,7 +44,7 @@ export function CcoHeader({
           <p className="font-mono text-sm font-bold tracking-[0.18em] text-foreground">
             CCO CENTRAL
           </p>
-          <p className="tech-label">Ferrovia Vale Aurora — Malha Norte/Sul</p>
+          <p className="tech-label">ArcelorMittal Libéria</p>
         </div>
       </div>
 

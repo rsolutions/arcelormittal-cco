@@ -15,9 +15,9 @@ import type { AccessLevel, SelectedObject, ViewMode } from "@/lib/cco/types";
 import { DEFAULT_VIEWPORT, centerOn, zoomViewport, type Viewport } from "@/lib/cco/viewport";
 import { controlService } from "@/services";
 
-const TITLE = "Painel Sinótico CCO — Centro de Controle Operacional Ferroviário";
+const TITLE = "Painel Sinótico CCO — ArcelorMittal Libéria";
 const DESCRIPTION =
-  "Painel sinótico ferroviário com mapa da malha, trens em movimento, sinais luminosos, ocupação de trechos, AMVs, alarmes e simulação operacional.";
+  "Painel sinótico ferroviário da ArcelorMittal Libéria com pátios, trens em movimento, sinais, AMVs, alarmes e simulação operacional.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -84,6 +84,10 @@ function CcoPanel() {
     if (station) return selectAndFocus({ kind: "ESTACAO", id: station.id });
     const sw = state.switches.find((s) => s.id.toUpperCase().includes(term));
     if (sw) return selectAndFocus({ kind: "AMV", id: sw.id });
+    const yard = state.yards.find(
+      (item) => item.name.toUpperCase().includes(term) || item.id.toUpperCase().includes(term),
+    );
+    if (yard) return selectAndFocus({ kind: "PATIO", id: yard.id });
     const segment = state.segments.find((s) => s.id.toUpperCase().includes(term));
     if (segment) return selectAndFocus({ kind: "TRECHO", id: segment.id });
     const km = Number(term.replace(/[^0-9]/g, ""));

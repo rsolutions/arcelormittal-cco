@@ -32,7 +32,7 @@ export function KpiBar({ kpis }: { kpis: Kpis }) {
       value: String(kpis.devicesOffline).padStart(2, "0"),
       tone: kpis.devicesOffline > 0 ? "caution" : "normal",
     },
-    { label: "Estações operacionais", value: kpis.stationsOperational, tone: "normal" },
+    { label: "Pátios operacionais", value: kpis.stationsOperational, tone: "normal" },
     { label: "Velocidade média", value: `${kpis.averageSpeed} km/h`, tone: "info" },
     {
       label: "Pontualidade",

@@ -140,19 +140,13 @@ export function RailwayMap({
           fill="url(#grid)"
         />
 
-        {/* line labels */}
-        <text x={40} y={140} fontSize={11} fontFamily="var(--font-mono)" fill="var(--muted-foreground)">
+        {/* single straight operating corridor */}
+        <text x={45} y={285} fontSize={11} fontFamily="var(--font-mono)" fill="var(--muted-foreground)">
           {LINE_LABELS.L1.toUpperCase()}
-        </text>
-        <text x={40} y={360} fontSize={11} fontFamily="var(--font-mono)" fill="var(--muted-foreground)">
-          {LINE_LABELS.L2.toUpperCase()}
-        </text>
-        <text x={400} y={600} fontSize={11} fontFamily="var(--font-mono)" fill="var(--muted-foreground)">
-          {LINE_LABELS.RN.toUpperCase()}
         </text>
 
         {/* yards */}
-        {state.yards.map((yard) => (
+        {filters.stations && state.yards.map((yard) => (
           <YardShape
             key={yard.id}
             yard={yard}
