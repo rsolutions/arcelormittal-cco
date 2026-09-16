@@ -6,6 +6,7 @@ import { pointAt } from "./geometry";
 import type {
   Alarm,
   KmMarker,
+  LineId,
   Point,
   RailSwitch,
   Signal,

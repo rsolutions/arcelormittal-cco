@@ -44,11 +44,11 @@ function clone<T>(value: T): T {
 function buildInitialState(): CcoState {
   const segments = clone(SEGMENTS);
   const trains: Train[] = TRAIN_SEEDS.map((seed) => {
-    const route = ROUTES[seed.routeId];
-    const step = route[seed.routeIndex];
+    const route = ROUTES[seed.routeId]!;
+    const step = route[seed.routeIndex]!;
     const segment = segments.find((s) => s.id === step.segmentId)!;
     const t = step.reverse ? 1 - seed.progress : seed.progress;
-    const stations = STATION_ORDER[seed.routeId];
+    const stations = STATION_ORDER[seed.routeId]!;
     return {
       id: seed.id,
       prefix: seed.prefix,
@@ -58,7 +58,7 @@ function buildInitialState(): CcoState {
       km: segment.startKm + (segment.endKm - segment.startKm) * seed.progress,
       status: "EM_CIRCULACAO",
       delay: 0,
-      nextStation: stations[Math.min(stations.length - 1, seed.routeIndex + 1)],
+      nextStation: stations[Math.min(stations.length - 1, seed.routeIndex + 1)]!,
       origin: seed.origin,
       destination: seed.destination,
       cars: seed.cars,
@@ -120,7 +120,7 @@ class SimulationEngine {
 
   constructor() {
     TRAIN_SEEDS.forEach((seed) => {
-      this.routeOf.set(seed.id, ROUTES[seed.routeId]);
+      this.routeOf.set(seed.id, ROUTES[seed.routeId]!);
       this.routeIdOf.set(seed.id, seed.routeId);
     });
     this.recompute();
@@ -226,14 +226,14 @@ class SimulationEngine {
     const dtHours = (TICK_MS / 1000) * TIME_SCALE / 3600;
     this.state.trains.forEach((train) => {
       const route = this.routeOf.get(train.id)!;
-      const step = route[train.routeIndex];
+      const step = route[train.routeIndex]!;
       const segment = this.segment(step.segmentId);
       const blocked =
         segment.status === "BLOQUEADO" ||
         segment.status === "MANUTENCAO" ||
         segment.status === "FALHA";
 
-      const nextStep = route[(train.routeIndex + 1) % route.length];
+      const nextStep = route[(train.routeIndex + 1) % route.length]!;
       const nextSegment = this.segment(nextStep.segmentId);
       const nextBusy =
         (nextSegment.occupancy && nextSegment.occupancy !== train.id) ||
@@ -259,10 +259,10 @@ class SimulationEngine {
       if (train.progress >= 1) {
         train.progress = 0;
         train.routeIndex = (train.routeIndex + 1) % route.length;
-        const newStep = route[train.routeIndex];
+        const newStep = route[train.routeIndex]!;
         train.segmentId = newStep.segmentId;
-        const stations = STATION_ORDER[this.routeIdOf.get(train.id)!];
-        train.nextStation = stations[Math.min(stations.length - 1, train.routeIndex + 1)];
+        const stations = STATION_ORDER[this.routeIdOf.get(train.id)!]!;
+        train.nextStation = stations[Math.min(stations.length - 1, train.routeIndex + 1)]!;
         this.log(
           `Trem ${train.id} entrou no trecho ${newStep.segmentId}`,
           train.id,
@@ -272,7 +272,7 @@ class SimulationEngine {
         this.publish("TRACK_OCCUPANCY_CHANGED", { segmentId: newStep.segmentId, trainId: train.id });
       }
 
-      const activeStep = route[train.routeIndex];
+      const activeStep = route[train.routeIndex]!;
       const activeSegment = this.segment(activeStep.segmentId);
       train.segmentId = activeStep.segmentId;
       const t = activeStep.reverse ? 1 - train.progress : train.progress;
@@ -286,7 +286,7 @@ class SimulationEngine {
 
   private randomEvents() {
     if (Math.random() < 0.04) {
-      const train = this.state.trains[Math.floor(Math.random() * this.state.trains.length)];
+      const train = this.state.trains[Math.floor(Math.random() * this.state.trains.length)]!;
       train.delay = Math.round((train.delay + 1 + Math.random() * 2) * 10) / 10;
       if (train.delay >= 4) {
         this.raiseAlarm(
@@ -299,7 +299,7 @@ class SimulationEngine {
       }
     }
     if (Math.random() < 0.02) {
-      const signal = this.state.signals[Math.floor(Math.random() * this.state.signals.length)];
+      const signal = this.state.signals[Math.floor(Math.random() * this.state.signals.length)]!;
       if (signal.status === "ONLINE") {
         signal.status = "OFFLINE";
         signal.aspect = "CINZA";
@@ -429,8 +429,8 @@ class SimulationEngine {
     if (delayed)
       hints.push(
         `${delayed} trem(ns) com atraso relevante — maior: Trem ${
-          [...trains].sort((a, b) => b.delay - a.delay)[0].id
-        } +${Math.round([...trains].sort((a, b) => b.delay - a.delay)[0].delay)} min.`,
+          [...trains].sort((a, b) => b.delay - a.delay)[0]!.id
+        } +${Math.round([...trains].sort((a, b) => b.delay - a.delay)[0]!.delay)} min.`,
       );
     if (offline) hints.push(`${offline} equipamento(s) sem comunicação na malha.`);
     const held = trains.filter((t) => t.status === "RETIDO");
