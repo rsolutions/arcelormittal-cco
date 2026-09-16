@@ -146,7 +146,7 @@ export function RailwayMap({
         </text>
 
         {/* yards */}
-        {state.yards.map((yard) => (
+        {filters.stations && state.yards.map((yard) => (
           <YardShape
             key={yard.id}
             yard={yard}

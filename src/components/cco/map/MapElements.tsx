@@ -348,6 +348,16 @@ export function YardShape({
   onHover,
   selected,
 }: MapItemProps & { yard: Yard }) {
+  const mainY = 320;
+  const above = yard.position.y < mainY;
+  const centerX = yard.position.x + yard.width / 2;
+  const sidingY = above ? yard.position.y + yard.height - 18 : yard.position.y + 18;
+  const labelY = above ? yard.position.y - 10 : yard.position.y + yard.height + 17;
+  const leftMain = centerX - yard.width * 0.72;
+  const rightMain = centerX + yard.width * 0.72;
+  const leftSiding = yard.position.x + 18;
+  const rightSiding = yard.position.x + yard.width - 18;
+  const sidingPath = `M ${leftMain} ${mainY} L ${leftSiding} ${sidingY} L ${rightSiding} ${sidingY} L ${rightMain} ${mainY}`;
   return (
     <g
       className="cursor-pointer"
@@ -364,34 +374,34 @@ export function YardShape({
       }
       onMouseLeave={() => onHover(null)}
     >
-      <rect
-        x={yard.position.x}
-        y={yard.position.y}
-        width={yard.width}
-        height={yard.height}
-        rx={3}
-        fill="var(--surface-2)"
-        stroke={selected ? "var(--foreground)" : "var(--border-strong)"}
-        strokeDasharray="4 3"
+      <path d={sidingPath} stroke="transparent" strokeWidth={18} fill="none" />
+      <path
+        d={sidingPath}
+        stroke={selected ? "var(--foreground)" : "var(--rail)"}
+        strokeWidth={selected ? 3 : 2}
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       {Array.from({ length: yard.tracksTotal }).map((_, i) => (
         <line
           key={i}
-          x1={yard.position.x + 8}
-          y1={yard.position.y + 6 + (i * (yard.height - 12)) / (yard.tracksTotal - 1 || 1)}
-          x2={yard.position.x + yard.width - 8}
-          y2={yard.position.y + 6 + (i * (yard.height - 12)) / (yard.tracksTotal - 1 || 1)}
+          x1={yard.position.x + 26}
+          y1={sidingY + (above ? -1 : 1) * (i + 1) * 7}
+          x2={yard.position.x + yard.width - 26}
+          y2={sidingY + (above ? -1 : 1) * (i + 1) * 7}
           stroke={i < yard.tracksInUse ? "var(--state-danger)" : "var(--rail-dim)"}
-          strokeWidth={2}
+          strokeWidth={1.5}
         />
       ))}
       <text
-        x={yard.position.x + yard.width / 2}
-        y={yard.position.y - 5}
+        x={centerX}
+        y={labelY}
         textAnchor="middle"
-        fontSize={9}
+        fontSize={10}
         fontFamily="var(--font-mono)"
-        fill="var(--muted-foreground)"
+        fontWeight={600}
+        fill={selected ? "var(--foreground)" : "var(--muted-foreground)"}
       >
         {yard.name.toUpperCase()}
       </text>

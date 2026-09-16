@@ -52,7 +52,7 @@ export function DetailPanel({
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3">
         {!selected ? (
           <p className="font-mono text-[11px] leading-relaxed text-muted-foreground">
-            Selecione um trem, estação, sinal, AMV, trecho ou alarme no mapa para ver os detalhes
+            Selecione um trem, pátio, sinal, AMV, trecho ou alarme no mapa para ver os detalhes
             operacionais.
           </p>
         ) : null}

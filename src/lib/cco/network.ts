@@ -216,7 +216,7 @@ export const TRAIN_SEEDS: TrainSeed[] = [
 
 export const INITIAL_ALARMS: Alarm[] = [];
 
-const eastboundYards = YARD_SEEDS.sort((a, b) => a.km - b.km).map((yard) => yard.name);
+const eastboundYards = [...YARD_SEEDS].sort((a, b) => a.km - b.km).map((yard) => yard.name);
 
 export const STATION_ORDER: Record<string, string[]> = {
   CORREDOR_LESTE: eastboundYards,

@@ -24,7 +24,7 @@ const LINES: { id: MapFilters["line"]; label: string }[] = [
 
 const TOGGLES: { key: keyof MapFilters; label: string }[] = [
   { key: "trains", label: "Trens" },
-  { key: "stations", label: "Estações" },
+  { key: "stations", label: "Pátios" },
   { key: "signals", label: "Sinais" },
   { key: "switches", label: "AMVs" },
   { key: "alarms", label: "Alarmes" },
@@ -88,7 +88,7 @@ export function ControlBar({
         <input
           value={search}
           onChange={(e) => onSearch(e.target.value)}
-          placeholder="Buscar trem, estação, sinal ou KM..."
+          placeholder="Buscar trem, pátio, sinal ou KM..."
           className="w-full rounded border border-border bg-background py-1.5 pr-2 pl-7 font-mono text-[11px] text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none"
         />
       </label>
