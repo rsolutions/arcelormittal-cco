@@ -435,7 +435,7 @@ class SimulationEngine {
     if (offline) hints.push(`${offline} equipamento(s) sem comunicação na malha.`);
     const held = trains.filter((t) => t.status === "RETIDO");
     if (held.length)
-      hints.push(`Trem ${held[0].id} retido aguardando liberação de trecho à frente.`);
+      hints.push(`Trem ${held[0]!.id} retido aguardando liberação de trecho à frente.`);
     if (!hints.length) hints.push("Circulação estável — nenhum evento crítico previsto.");
     this.state.assistant = hints.slice(0, 4);
   }

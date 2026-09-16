@@ -276,7 +276,7 @@ export function TrainMarker({
   onHover,
   selected,
   dimmed,
-}: MapItemProps & { train: Train; segment?: TrackSegment }) {
+}: MapItemProps & { train: Train; segment?: TrackSegment | undefined }) {
   const angle = segment ? headingAt(segment.points, train.progress) : 0;
   const color = trainColor[train.status];
   return (
