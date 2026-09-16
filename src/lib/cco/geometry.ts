@@ -3,7 +3,9 @@ import type { Point } from "./types";
 export function polylineLength(points: Point[]): number {
   let total = 0;
   for (let i = 1; i < points.length; i += 1) {
-    total += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+    const a = points[i - 1]!;
+    const b = points[i]!;
+    total += Math.hypot(b.x - a.x, b.y - a.y);
   }
   return total;
 }
@@ -14,8 +16,8 @@ export function pointAt(points: Point[], t: number): Point {
   const target = polylineLength(points) * clamped;
   let walked = 0;
   for (let i = 1; i < points.length; i += 1) {
-    const a = points[i - 1];
-    const b = points[i];
+    const a = points[i - 1]!;
+    const b = points[i]!;
     const len = Math.hypot(b.x - a.x, b.y - a.y);
     if (walked + len >= target || i === points.length - 1) {
       const local = len === 0 ? 0 : (target - walked) / len;
@@ -23,7 +25,7 @@ export function pointAt(points: Point[], t: number): Point {
     }
     walked += len;
   }
-  return points[points.length - 1];
+  return points[points.length - 1]!;
 }
 
 /** Heading in degrees at normalized progress. */

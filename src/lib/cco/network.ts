@@ -286,7 +286,7 @@ const SIGNAL_SEEDS: SignalSeed[] = [
 ];
 
 export const SIGNALS: Signal[] = SIGNAL_SEEDS.map((s) => {
-  const base = pointAt(SEGMENT_MAP[s.segmentId].points, s.t);
+  const base = pointAt(SEGMENT_MAP[s.segmentId]!.points, s.t);
   const vertical = s.line === "RN" && s.segmentId === "T-18";
   return {
     id: s.id,
@@ -379,7 +379,7 @@ export const STATION_ORDER: Record<string, string[]> = {
   CRUZAMENTO: ["EST-AUR", "EST-CEN", "EST-IND", "EST-MIR", "EST-TSU"],
 };
 
-export const LINE_LABELS: Record<string, string> = {
+export const LINE_LABELS: Record<LineId, string> = {
   L1: "Linha 1 — Norte",
   L2: "Linha 2 — Sul",
   RN: "Ramal Oeste",
