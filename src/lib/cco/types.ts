@@ -191,6 +191,7 @@ export type ScenarioId =
 export interface CcoState {
   clock: number;
   running: boolean;
+  live: boolean;
   scenario: ScenarioId;
   trains: Train[];
   signals: Signal[];
