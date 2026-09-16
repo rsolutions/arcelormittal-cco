@@ -1,24 +1,208 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
+import { AlarmPanel } from "@/components/cco/AlarmPanel";
+import { AssistantCard } from "@/components/cco/AssistantCard";
+import { CcoHeader } from "@/components/cco/CcoHeader";
+import { ControlBar } from "@/components/cco/ControlBar";
+import { DetailPanel } from "@/components/cco/DetailPanel";
+import { EventTimeline } from "@/components/cco/EventTimeline";
+import { RailwayMap, type MapFilters } from "@/components/cco/RailwayMap";
+import { useCco } from "@/hooks/useCco";
+import { locateObject } from "@/lib/cco/locate";
+import type { AccessLevel, SelectedObject, ViewMode } from "@/lib/cco/types";
+import { DEFAULT_VIEWPORT, centerOn, zoomViewport, type Viewport } from "@/lib/cco/viewport";
+import { controlService } from "@/services";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+const TITLE = "Painel Sinótico CCO — Centro de Controle Operacional Ferroviário";
+const DESCRIPTION =
+  "Painel sinótico ferroviário com mapa da malha, trens em movimento, sinais luminosos, ocupação de trechos, AMVs, alarmes e simulação operacional.";
+
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: TITLE },
+      { name: "description", content: DESCRIPTION },
+      { property: "og:title", content: TITLE },
+      { property: "og:description", content: DESCRIPTION },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: CcoPanel,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+const INITIAL_FILTERS: MapFilters = {
+  line: "ALL",
+  trains: true,
+  stations: true,
+  signals: true,
+  switches: true,
+  alarms: true,
+  onlyOffline: false,
+  onlyOccupied: false,
+};
+
+function CcoPanel() {
+  const state = useCco();
+  const navigate = useNavigate();
+  const [viewMode, setViewMode] = useState<ViewMode>("OPERACIONAL");
+  const [filters, setFilters] = useState<MapFilters>(INITIAL_FILTERS);
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<SelectedObject | null>(null);
+  const [viewport, setViewport] = useState<Viewport>(DEFAULT_VIEWPORT);
+  const [accessLevel, setAccessLevel] = useState<AccessLevel>("ADMINISTRADOR");
+
+  const focus = useCallback(
+    (selection: SelectedObject) => {
+      const point = locateObject(state, selection.kind, selection.id);
+      if (point) setViewport((current) => centerOn(current, point, 620));
+    },
+    [state],
+  );
+
+  const selectAndFocus = useCallback(
+    (selection: SelectedObject) => {
+      setSelected(selection);
+      focus(selection);
+    },
+    [focus],
+  );
+
+  const runSearch = useCallback(() => {
+    const term = search.trim().toUpperCase();
+    if (!term) return;
+    const train = state.trains.find((t) => t.id.includes(term) || t.prefix.toUpperCase().includes(term));
+    if (train) return selectAndFocus({ kind: "TREM", id: train.id });
+    const signal = state.signals.find((s) => s.id.toUpperCase().includes(term));
+    if (signal) return selectAndFocus({ kind: "SINAL", id: signal.id });
+    const station = state.stations.find(
+      (s) => s.name.toUpperCase().includes(term) || s.code.includes(term),
+    );
+    if (station) return selectAndFocus({ kind: "ESTACAO", id: station.id });
+    const sw = state.switches.find((s) => s.id.toUpperCase().includes(term));
+    if (sw) return selectAndFocus({ kind: "AMV", id: sw.id });
+    const segment = state.segments.find((s) => s.id.toUpperCase().includes(term));
+    if (segment) return selectAndFocus({ kind: "TRECHO", id: segment.id });
+    const km = Number(term.replace(/[^0-9]/g, ""));
+    if (!Number.isNaN(km) && km > 0) {
+      const byKm = state.segments.find((s) => km >= s.startKm && km <= s.endKm);
+      if (byKm) selectAndFocus({ kind: "TRECHO", id: byKm.id });
+    }
+  }, [search, selectAndFocus, state]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const key = event.key;
+      if (key === "F1") {
+        event.preventDefault();
+        setViewMode("OPERACIONAL");
+      } else if (key === "F2") {
+        event.preventDefault();
+        setViewMode("ALARMES");
+      } else if (key === "F3") {
+        event.preventDefault();
+        setViewMode("INFRAESTRUTURA");
+      } else if (key === "F4") {
+        event.preventDefault();
+        navigate({ to: "/historico" });
+      } else if (key === "+" || key === "=") {
+        setViewport((vp) => zoomViewport(vp, 0.8));
+      } else if (key === "-") {
+        setViewport((vp) => zoomViewport(vp, 1.25));
+      } else if (key === "Escape") {
+        setSelected(null);
+      } else if (key === "Home") {
+        setViewport(DEFAULT_VIEWPORT);
+      } else if (key === "Enter" && document.activeElement?.tagName !== "INPUT") {
+        runSearch();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [navigate, runSearch]);
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
+    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-background">
+      <CcoHeader
+        connectivity={state.connectivity}
+        clock={state.clock}
+        operator="ADMIN"
+        accessLevel={accessLevel}
+        onAccessLevelChange={setAccessLevel}
+        criticalAlarms={state.kpis.criticalAlarms}
       />
+      <KpiRow />
+      <ControlBar
+        viewMode={viewMode}
+        onViewMode={setViewMode}
+        filters={filters}
+        onFilters={setFilters}
+        search={search}
+        onSearch={setSearch}
+        running={state.running}
+        live={state.live}
+        scenario={state.scenario}
+        onStart={controlService.start}
+        onPause={controlService.pause}
+        onReset={() => {
+          controlService.reset();
+          setSelected(null);
+          setViewport(DEFAULT_VIEWPORT);
+        }}
+        onLive={controlService.setLive}
+        onScenario={(scenario) => controlService.setScenario(scenario)}
+      />
+
+      <div className="flex min-h-0 flex-1">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1">
+            <RailwayMap
+              state={state}
+              filters={filters}
+              viewMode={viewMode}
+              selected={selected}
+              onSelect={(selection) =>
+                selection.kind === "TREM" ? selectAndFocus(selection) : setSelected(selection)
+              }
+              viewport={viewport}
+              onViewportChange={setViewport}
+            />
+          </div>
+          <div className="h-56 shrink-0">
+            <AlarmPanel
+              alarms={state.alarms}
+              selectedId={selected?.kind === "ALARME" ? selected.id : null}
+              onSelectAlarm={(alarm) => setSelected({ kind: "ALARME", id: alarm.id })}
+              onLocate={(alarm) => selectAndFocus({ kind: alarm.objectKind, id: alarm.objectId })}
+            />
+          </div>
+        </div>
+
+        <div className="flex w-[340px] min-h-0 shrink-0 flex-col border-l border-border bg-surface 2xl:w-[380px]">
+          <AssistantCard hints={state.assistant} />
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <DetailPanel
+              state={state}
+              selected={selected}
+              accessLevel={accessLevel}
+              onClose={() => setSelected(null)}
+              onSelect={setSelected}
+              onLocate={focus}
+            />
+          </div>
+          <div className="h-64 shrink-0 border-t border-border">
+            <EventTimeline
+              events={state.events}
+              onFocus={(event) => selectAndFocus({ kind: event.objectKind, id: event.objectId })}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
+
+  function KpiRow() {
+    const { KpiBar } = require("@/components/cco/KpiBar");
+    return <KpiBar kpis={state.kpis} />;
+  }
 }
