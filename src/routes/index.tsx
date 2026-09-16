@@ -6,6 +6,7 @@ import { CcoHeader } from "@/components/cco/CcoHeader";
 import { ControlBar } from "@/components/cco/ControlBar";
 import { DetailPanel } from "@/components/cco/DetailPanel";
 import { EventTimeline } from "@/components/cco/EventTimeline";
+import { KpiBar } from "@/components/cco/KpiBar";
 import { RailwayMap, type MapFilters } from "@/components/cco/RailwayMap";
 import { useCco } from "@/hooks/useCco";
 import { locateObject } from "@/lib/cco/locate";
@@ -131,7 +132,7 @@ function CcoPanel() {
         onAccessLevelChange={setAccessLevel}
         criticalAlarms={state.kpis.criticalAlarms}
       />
-      <KpiRow />
+      <KpiBar kpis={state.kpis} />
       <ControlBar
         viewMode={viewMode}
         onViewMode={setViewMode}
