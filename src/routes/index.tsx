@@ -45,6 +45,7 @@ const INITIAL_FILTERS: MapFilters = {
 
 function CcoPanel() {
   const state = useCco();
+  const hydrated = useHydrated();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>("OPERACIONAL");
   const [filters, setFilters] = useState<MapFilters>(INITIAL_FILTERS);

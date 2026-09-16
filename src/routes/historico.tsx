@@ -36,6 +36,7 @@ const KINDS: (ObjectKind | "TODOS")[] = [
 
 function HistoryPage() {
   const state = useCco();
+  const bootDone = useHydrated();
   const hydrated = useHydrated();
   const [tab, setTab] = useState<"EVENTOS" | "ALARMES" | "AUDITORIA">("EVENTOS");
   const [term, setTerm] = useState("");
