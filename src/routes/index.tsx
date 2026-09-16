@@ -8,7 +8,8 @@ import { DetailPanel } from "@/components/cco/DetailPanel";
 import { EventTimeline } from "@/components/cco/EventTimeline";
 import { KpiBar } from "@/components/cco/KpiBar";
 import { RailwayMap, type MapFilters } from "@/components/cco/RailwayMap";
-import { useCco } from "@/hooks/useCco";
+import { BootScreen } from "@/components/cco/BootScreen";
+import { useCco, useHydrated } from "@/hooks/useCco";
 import { locateObject } from "@/lib/cco/locate";
 import type { AccessLevel, SelectedObject, ViewMode } from "@/lib/cco/types";
 import { DEFAULT_VIEWPORT, centerOn, zoomViewport, type Viewport } from "@/lib/cco/viewport";
@@ -122,6 +123,10 @@ function CcoPanel() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [navigate, runSearch]);
+
+  if (!hydrated) {
+    return <BootScreen title={TITLE} subtitle={DESCRIPTION} />;
+  }
 
   return (
     <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-background">
