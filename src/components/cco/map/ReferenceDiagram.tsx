@@ -23,6 +23,7 @@ export function ReferenceDiagram({ state, selected, onSelect }: {
         <g role="button" aria-label={`Pátio ${layout.name}`} tabIndex={0} className="cursor-pointer" onClick={selectYard}
           onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") selectYard(); }}>
           <title>{layout.name}</title>
+          <rect x={left + 12} y={DIAGRAM_MAIN_Y + 10} width={right - left - 24} height={diagramX(80)} fill="transparent" />
           {layout.depth > 0 ? <>
             <path d={`M ${left} ${DIAGRAM_MAIN_Y} L ${left + diagramX(13)} ${bottom} H ${right - diagramX(13)} L ${right} ${DIAGRAM_MAIN_Y}`}
               fill="none" stroke="transparent" strokeWidth={22} />
