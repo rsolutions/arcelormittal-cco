@@ -101,70 +101,68 @@ export const YARDS: Yard[] = YARD_SEEDS.map((yard) => ({
   tracksTotal: yard.tracksTotal,
 }));
 
-interface SignalSeed {
-  id: string;
-  km: number;
-  direction: Signal["direction"];
-  segmentId: string;
-  protects: string;
-  t: number;
-  offset: number;
+/** Each yard is a single siding ("risco") parallel to the main line.
+ *  Divergence always happens left→right: entry switch on the left, exit switch on the right. */
+const YARD_HALF = 62;
+const SIDING_HALF = 40;
+const SIDING_GAP = 40;
+const SIGNAL_GAP = 82;
+
+export function sidingY(side: "ABOVE" | "BELOW") {
+  return side === "ABOVE" ? MAIN_Y - SIDING_GAP : MAIN_Y + SIDING_GAP;
 }
 
-const SIGNAL_SEEDS: SignalSeed[] = SEGMENTS.slice(0, -1).flatMap((segment, index) => {
-  const next = SEGMENTS[index + 1] ?? segment;
-  const currentNumber = index * 2 + 1;
-  return [
-    {
-      id: `S-${String(101 + currentNumber - 1)}`,
-      km: segment.endKm - 2,
-      direction: "LESTE" as const,
-      segmentId: segment.id,
-      protects: next.id,
-      t: 0.82,
-      offset: -24,
-    },
-    {
-      id: `S-${String(102 + currentNumber - 1)}`,
-      km: segment.startKm + 2,
-      direction: "OESTE" as const,
+function segmentAtX(x: number): TrackSegment {
+  return (
+    SEGMENTS.find((s) => x >= s.points[0]!.x && x <= s.points[s.points.length - 1]!.x) ??
+    SEGMENTS[0]!
+  );
+}
+
+// Signals always at the yard entrances (one each side).
+export const SIGNALS: Signal[] = YARD_SEEDS.flatMap((yard, index) => {
+  const offset = yard.side === "ABOVE" ? 22 : -22;
+  const mk = (n: number, x: number, direction: Signal["direction"], km: number): Signal => {
+    const segment = segmentAtX(x);
+    return {
+      id: `S-${101 + n}`,
+      km,
+      direction,
+      line: "L1",
+      aspect: "VERDE",
+      status: "ONLINE",
       segmentId: segment.id,
       protects: segment.id,
-      t: 0.18,
-      offset: 24,
-    },
+      position: p(x, MAIN_Y + offset),
+      lastUpdate: 0,
+      lastEvent: `Inicialização — entrada do pátio ${yard.name}`,
+    };
+  };
+  return [
+    mk(index * 2, yard.x - SIGNAL_GAP, "LESTE", yard.km - 2),
+    mk(index * 2 + 1, yard.x + SIGNAL_GAP, "OESTE", yard.km + 2),
   ];
 });
 
-export const SIGNALS: Signal[] = SIGNAL_SEEDS.map((seed) => {
-  const segment = SEGMENT_MAP[seed.segmentId];
-  const base = segment ? pointAt(segment.points, seed.t) : p(MAIN_START, MAIN_Y);
-  return {
-    id: seed.id,
-    km: seed.km,
-    direction: seed.direction,
+// Switch sensors: entry (left) and exit (right) of each yard siding.
+export const SWITCHES: RailSwitch[] = YARD_SEEDS.flatMap((yard, index) => {
+  const sy = sidingY(yard.side);
+  const mk = (n: number, px: number, bx: number, km: number): RailSwitch => ({
+    id: `AMV-${String(n + 1).padStart(2, "0")}`,
+    km,
     line: "L1",
-    aspect: "VERDE",
-    status: "ONLINE",
-    segmentId: seed.segmentId,
-    protects: seed.protects,
-    position: { x: base.x, y: base.y + seed.offset },
+    position: "NORMAL",
+    status: "NORMAL",
+    occupancy: null,
+    point: p(px, MAIN_Y),
+    branch: p(bx, sy),
     lastUpdate: 0,
-    lastEvent: "Inicialização — aspecto VERDE",
-  } satisfies Signal;
+  });
+  return [
+    mk(index * 2, yard.x - YARD_HALF, yard.x - SIDING_HALF, yard.km - 1),
+    mk(index * 2 + 1, yard.x + YARD_HALF, yard.x + SIDING_HALF, yard.km + 1),
+  ];
 });
-
-export const SWITCHES: RailSwitch[] = YARD_SEEDS.map((yard, index) => ({
-  id: `AMV-${String(index + 1).padStart(2, "0")}`,
-  km: yard.km,
-  line: "L1",
-  position: "NORMAL",
-  status: "NORMAL",
-  occupancy: null,
-  point: p(yard.x, MAIN_Y),
-  branch: p(yard.x + 34, yard.side === "ABOVE" ? MAIN_Y - 42 : MAIN_Y + 42),
-  lastUpdate: 0,
-}));
 
 export const KM_MARKERS: KmMarker[] = [
   { km: 0, position: p(MAIN_START, MAIN_Y) },

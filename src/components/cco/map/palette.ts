@@ -8,7 +8,7 @@ import type {
 
 /** All map colors resolve to design-system state tokens. */
 export const trackColor: Record<TrackStatus, string> = {
-  NORMAL: "var(--rail)",
+  NORMAL: "var(--state-info)",
   OCUPADO: "var(--state-danger)",
   BLOQUEADO: "var(--state-offline)",
   MANUTENCAO: "var(--state-maint)",
@@ -16,18 +16,19 @@ export const trackColor: Record<TrackStatus, string> = {
   SEM_COMUNICACAO: "var(--state-offline)",
 };
 
+/** Signals and switch sensors communicate in blue (livre) or red (restrição). */
 export const aspectColor: Record<SignalAspect, string> = {
-  VERDE: "var(--state-clear)",
-  AMARELO: "var(--state-caution)",
+  VERDE: "var(--state-info)",
+  AMARELO: "var(--state-danger)",
   VERMELHO: "var(--state-danger)",
   CINZA: "var(--state-offline)",
 };
 
 export const switchColor: Record<SwitchStatus, string> = {
-  NORMAL: "var(--state-clear)",
-  REVERSO: "var(--state-caution)",
+  NORMAL: "var(--state-info)",
+  REVERSO: "var(--state-danger)",
   OCUPADO: "var(--state-danger)",
-  FALHA: "var(--state-high)",
+  FALHA: "var(--state-danger)",
   SEM_COMUNICACAO: "var(--state-offline)",
 };
 
