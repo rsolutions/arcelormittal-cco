@@ -7,7 +7,6 @@ export function ReferenceDiagram({ state, selected, onSelect }: {
   onSelect: (selection: SelectedObject) => void;
 }) {
   return <g>
-    <path d={`M 0 ${DIAGRAM_MAIN_Y} H 1600`} fill="none" stroke="var(--diagram-ink)" strokeWidth={2.5} />
     {REFERENCE_YARDS.map((layout, index) => {
       const yard = state.yards.find((item) => item.name === layout.name);
       if (!yard) return null;
@@ -28,11 +27,11 @@ export function ReferenceDiagram({ state, selected, onSelect }: {
             <path d={`M ${left} ${DIAGRAM_MAIN_Y} L ${left + diagramX(13)} ${bottom} H ${right - diagramX(13)} L ${right} ${DIAGRAM_MAIN_Y}`}
               fill="none" stroke="transparent" strokeWidth={22} />
             <path d={`M ${left} ${DIAGRAM_MAIN_Y} L ${left + diagramX(13)} ${bottom} H ${right - diagramX(13)} L ${right} ${DIAGRAM_MAIN_Y}`}
-              fill="none" stroke={isSelected ? "var(--diagram-free)" : "var(--diagram-ink)"} strokeWidth={2.5} />
+              fill="none" stroke={isSelected ? "var(--diagram-free)" : "var(--rail)"} strokeWidth={2.5} />
           </> : <path d={`M ${diagramX(394)} ${DIAGRAM_MAIN_Y - diagramX(15)} H ${diagramX(401)} L ${diagramX(410)} ${DIAGRAM_MAIN_Y}`}
-            fill="none" stroke={isSelected ? "var(--diagram-free)" : "var(--diagram-ink)"} strokeWidth={2.5} />}
+            fill="none" stroke={isSelected ? "var(--diagram-free)" : "var(--rail)"} strokeWidth={2.5} />}
           <text x={center} y={DIAGRAM_MAIN_Y + diagramX(75)} textAnchor="middle" fontFamily="var(--font-sans)"
-            fontSize={20} fill="var(--diagram-ink)">{layout.name === "GAE PETER TOWN" ? "Gae Peter Town" : layout.name.toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())}</text>
+            fontSize={15} fill="var(--foreground)">{layout.name}</text>
         </g>
         <DiagramSignal x={left} y={DIAGRAM_MAIN_Y + 5} signal={firstSignal} onSelect={onSelect} />
         <DiagramSignal x={right} y={DIAGRAM_MAIN_Y + 5} signal={secondSignal} onSelect={onSelect} />
@@ -56,9 +55,11 @@ function DiagramSignal({ x, y, signal, onSelect }: {
     onClick={select} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") select(); }}>
     <title>{signal.id} — {blocked ? "Bloqueio" : "Livre"} — {signal.direction}</title>
     <rect x={-10} y={-5} width={20} height={48} fill="transparent" />
-    <path d="M 0 25 V 38 M -4 35 H 4 M -4 38 H 4" stroke="var(--diagram-ink)" strokeWidth={2} />
-    <rect x={-6} y={0} width={12} height={27} rx={3} fill="var(--diagram-ink)" />
+    <path d="M 0 25 V 38 M -4 35 H 4 M -4 38 H 4" stroke="var(--rail)" strokeWidth={2} />
+    <rect x={-6} y={0} width={12} height={27} rx={3} fill="var(--surface-2)" stroke="var(--border-strong)" />
     <circle cy={7} r={4.5} fill="var(--diagram-blocked)" opacity={blocked ? 1 : 0.28} />
     <circle cy={20} r={4.5} fill="var(--diagram-free)" opacity={blocked ? 0.28 : 1} />
+    <path d={signal.direction === "LESTE" ? "M -5 44 H 5 M 1 40 L 5 44 L 1 48" : "M 5 44 H -5 M -1 40 L -5 44 L -1 48"}
+      stroke="var(--muted-foreground)" strokeWidth={1.5} fill="none" />
   </g>;
 }
