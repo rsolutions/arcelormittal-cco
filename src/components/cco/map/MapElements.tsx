@@ -63,6 +63,20 @@ export function TrackSegmentShape({
       {selected ? (
         <path d={d} stroke="var(--foreground)" strokeWidth={1} fill="none" strokeDasharray="2 4" />
       ) : null}
+      {segment.status === "NORMAL"
+        ? [0.3, 0.7].map((t) => {
+            const pt = pointAt(segment.points, t);
+            return (
+              <polygon
+                key={t}
+                points={`${pt.x - 5},${pt.y} ${pt.x + 2},${pt.y - 4} ${pt.x + 2},${pt.y + 4}`}
+                fill="var(--foreground)"
+                opacity={0.6}
+                pointerEvents="none"
+              />
+            );
+          })
+        : null}
     </g>
   );
 }
@@ -100,7 +114,7 @@ export function SignalLamp({
         x1={signal.position.x}
         y1={signal.position.y}
         x2={signal.position.x}
-        y2={signal.position.y > 300 && signal.line !== "L1" ? signal.position.y - 10 : signal.position.y + 10}
+        y2={signal.position.y > 320 ? signal.position.y - 14 : signal.position.y + 14}
         stroke="var(--border-strong)"
         strokeWidth={1.5}
       />
@@ -122,7 +136,7 @@ export function SignalLamp({
       />
       <text
         x={signal.position.x}
-        y={signal.position.y + (signal.position.y < 300 ? -12 : 18)}
+        y={signal.position.y + (signal.position.y < 320 ? -12 : 18)}
         textAnchor="middle"
         fontSize={9}
         fontFamily="var(--font-mono)"
@@ -341,7 +355,7 @@ export function TrainMarker({
   );
 }
 
-/** Yard */
+/** Yard — single siding ("risco") parallel to the main line */
 export function YardShape({
   yard,
   onSelect,
@@ -351,49 +365,33 @@ export function YardShape({
   const mainY = 320;
   const above = yard.position.y < mainY;
   const centerX = yard.position.x + yard.width / 2;
-  const sidingY = above ? yard.position.y + yard.height - 18 : yard.position.y + 18;
-  const labelY = above ? yard.position.y - 10 : yard.position.y + yard.height + 17;
-  const leftMain = centerX - yard.width * 0.72;
-  const rightMain = centerX + yard.width * 0.72;
-  const leftSiding = yard.position.x + 18;
-  const rightSiding = yard.position.x + yard.width - 18;
-  const sidingPath = `M ${leftMain} ${mainY} L ${leftSiding} ${sidingY} L ${rightSiding} ${sidingY} L ${rightMain} ${mainY}`;
+  const sy = above ? mainY - 40 : mainY + 40;
+  const labelY = above ? sy - 12 : sy + 20;
+  const occupied = yard.tracksInUse > 0;
+  const d = `M ${centerX - 62} ${mainY} L ${centerX - 40} ${sy} L ${centerX + 40} ${sy} L ${centerX + 62} ${mainY}`;
   return (
     <g
       className="cursor-pointer"
       onClick={onSelect}
       onMouseMove={(e) =>
         onHover(
-          [
-            yard.name,
-            formatKm(yard.km),
-            `Linhas em uso: ${yard.tracksInUse}/${yard.tracksTotal}`,
-          ],
+          [yard.name, formatKm(yard.km), `Desvio: ${occupied ? "OCUPADO" : "LIVRE"}`],
           e,
         )
       }
       onMouseLeave={() => onHover(null)}
     >
-      <path d={sidingPath} stroke="transparent" strokeWidth={18} fill="none" />
-      <path
-        d={sidingPath}
-        stroke={selected ? "var(--foreground)" : "var(--rail)"}
-        strokeWidth={selected ? 3 : 2}
-        fill="none"
+      <path d={d} stroke="transparent" strokeWidth={18} fill="none" />
+      <path d={d} stroke="var(--rail-dim)" strokeWidth={7} fill="none" strokeLinejoin="round" />
+      <line
+        x1={centerX - 40}
+        y1={sy}
+        x2={centerX + 40}
+        y2={sy}
+        stroke={occupied ? "var(--state-danger)" : "var(--state-info)"}
+        strokeWidth={selected ? 6 : 4}
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
-      {Array.from({ length: yard.tracksTotal }).map((_, i) => (
-        <line
-          key={i}
-          x1={yard.position.x + 26}
-          y1={sidingY + (above ? -1 : 1) * (i + 1) * 7}
-          x2={yard.position.x + yard.width - 26}
-          y2={sidingY + (above ? -1 : 1) * (i + 1) * 7}
-          stroke={i < yard.tracksInUse ? "var(--state-danger)" : "var(--rail-dim)"}
-          strokeWidth={1.5}
-        />
-      ))}
       <text
         x={centerX}
         y={labelY}
@@ -403,7 +401,7 @@ export function YardShape({
         fontWeight={600}
         fill={selected ? "var(--foreground)" : "var(--muted-foreground)"}
       >
-        {yard.name.toUpperCase()}
+        {yard.name}
       </text>
     </g>
   );
