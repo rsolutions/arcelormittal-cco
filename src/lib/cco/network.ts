@@ -72,33 +72,35 @@ interface YardSeed {
   name: string;
   km: number;
   x: number;
-  side: "ABOVE" | "BELOW";
+  depth: number;
   tracksInUse: number;
   tracksTotal: number;
 }
 
 const YARD_SEEDS: YardSeed[] = [
-  { id: "PAT-MOK", name: "MOKRA", km: 25, x: 170, side: "ABOVE", tracksInUse: 2, tracksTotal: 3 },
-  { id: "PAT-GPT", name: "GAE PETER TOWN", km: 88, x: 490, side: "ABOVE", tracksInUse: 3, tracksTotal: 4 },
-  { id: "PAT-BLE", name: "BLEZI", km: 152, x: 810, side: "ABOVE", tracksInUse: 2, tracksTotal: 3 },
-  { id: "PAT-GRE", name: "GREBO", km: 216, x: 1130, side: "ABOVE", tracksInUse: 3, tracksTotal: 4 },
-  { id: "PAT-BAK", name: "BAKHON", km: 280, x: 1450, side: "ABOVE", tracksInUse: 2, tracksTotal: 3 },
-  { id: "PAT-GRH", name: "GREEN HILL", km: 43, x: 260, side: "BELOW", tracksInUse: 3, tracksTotal: 4 },
-  { id: "PAT-YIL", name: "YILA", km: 106, x: 580, side: "BELOW", tracksInUse: 2, tracksTotal: 3 },
-  { id: "PAT-TRO", name: "TROPOI", km: 170, x: 900, side: "BELOW", tracksInUse: 3, tracksTotal: 4 },
-  { id: "PAT-KIT", name: "KITOMA", km: 234, x: 1220, side: "BELOW", tracksInUse: 2, tracksTotal: 3 },
-  { id: "PAT-SAN", name: "SANNIQUELLE", km: 297, x: 1535, side: "BELOW", tracksInUse: 3, tracksTotal: 4 },
+  { id: "PAT-MOK", name: "MOKRA", km: 25, x: 110, depth: 36, tracksInUse: 2, tracksTotal: 3 },
+  { id: "PAT-GPT", name: "GAE PETER TOWN", km: 88, x: 260, depth: 68, tracksInUse: 3, tracksTotal: 4 },
+  { id: "PAT-BLE", name: "BLEZI", km: 152, x: 410, depth: 36, tracksInUse: 2, tracksTotal: 3 },
+  { id: "PAT-GRE", name: "GREBO", km: 216, x: 560, depth: 68, tracksInUse: 3, tracksTotal: 4 },
+  { id: "PAT-BAK", name: "BAKHON", km: 280, x: 710, depth: 36, tracksInUse: 2, tracksTotal: 3 },
+  { id: "PAT-GRH", name: "GREEN HILL", km: 43, x: 860, depth: 36, tracksInUse: 3, tracksTotal: 4 },
+  { id: "PAT-YIL", name: "YILA", km: 106, x: 1010, depth: 68, tracksInUse: 2, tracksTotal: 3 },
+  { id: "PAT-TRO", name: "TROPOI", km: 170, x: 1160, depth: 36, tracksInUse: 3, tracksTotal: 4 },
+  { id: "PAT-KIT", name: "KITOMA", km: 234, x: 1310, depth: 36, tracksInUse: 2, tracksTotal: 3 },
+  { id: "PAT-SAN", name: "SANNIQUELLE", km: 297, x: 1460, depth: 36, tracksInUse: 3, tracksTotal: 4 },
 ];
 
 export const YARDS: Yard[] = YARD_SEEDS.map((yard) => ({
   id: yard.id,
   name: yard.name,
   km: yard.km,
-  position: p(yard.x - 62, yard.side === "ABOVE" ? 185 : 385),
+  position: p(yard.x - 62, MAIN_Y + yard.depth),
   width: 124,
   height: 72,
   tracksInUse: yard.tracksInUse,
   tracksTotal: yard.tracksTotal,
+  siding: [p(yard.x - 62, MAIN_Y), p(yard.x - 40, MAIN_Y + yard.depth), p(yard.x + 40, MAIN_Y + yard.depth), p(yard.x + 62, MAIN_Y)],
+  ...(yard.id === "PAT-GRH" ? { spur: [p(yard.x - 12, MAIN_Y), p(yard.x - 30, MAIN_Y - 32), p(yard.x - 50, MAIN_Y - 32)] } : {}),
 }));
 
 /** Each yard is a single siding ("risco") parallel to the main line.
@@ -121,7 +123,7 @@ function segmentAtX(x: number): TrackSegment {
 
 // Signals always at the yard entrances (one each side).
 export const SIGNALS: Signal[] = YARD_SEEDS.flatMap((yard, index) => {
-  const offset = yard.side === "ABOVE" ? 22 : -22;
+  const offset = yard.depth + 16;
   const mk = (n: number, x: number, direction: Signal["direction"], km: number): Signal => {
     const segment = segmentAtX(x);
     return {
@@ -139,14 +141,14 @@ export const SIGNALS: Signal[] = YARD_SEEDS.flatMap((yard, index) => {
     };
   };
   return [
-    mk(index * 2, yard.x - SIGNAL_GAP, "LESTE", yard.km - 2),
-    mk(index * 2 + 1, yard.x + SIGNAL_GAP, "OESTE", yard.km + 2),
+    mk(index * 2, yard.x - SIDING_HALF, "LESTE", yard.km - 2),
+    mk(index * 2 + 1, yard.x + SIDING_HALF, "OESTE", yard.km + 2),
   ];
 });
 
 // Switch sensors: entry (left) and exit (right) of each yard siding.
 export const SWITCHES: RailSwitch[] = YARD_SEEDS.flatMap((yard, index) => {
-  const sy = sidingY(yard.side);
+  const sy = MAIN_Y + yard.depth;
   const mk = (n: number, px: number, bx: number, km: number): RailSwitch => ({
     id: `AMV-${String(n + 1).padStart(2, "0")}`,
     km,

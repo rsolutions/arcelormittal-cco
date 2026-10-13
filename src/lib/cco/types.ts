@@ -101,6 +101,8 @@ export interface Yard {
   height: number;
   tracksInUse: number;
   tracksTotal: number;
+  siding?: Point[];
+  spur?: Point[];
 }
 
 export interface KmMarker {
