@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Yard siding and optional spur polylines belong to the shared Yard model; renderers consume those coordinates so yard tracks, entrance signals and switch sensors use one layout source.

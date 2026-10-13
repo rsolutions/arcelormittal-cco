@@ -365,10 +365,10 @@ export function YardShape({
   const mainY = 320;
   const above = yard.position.y < mainY;
   const centerX = yard.position.x + yard.width / 2;
-  const sy = above ? mainY - 40 : mainY + 40;
-  const labelY = above ? sy - 12 : sy + 20;
+  const sy = yard.siding?.[1]?.y ?? (above ? mainY - 40 : mainY + 40);
+  const labelY = yard.siding ? mainY + 142 : (above ? sy - 12 : sy + 20);
   const occupied = yard.tracksInUse > 0;
-  const d = `M ${centerX - 62} ${mainY} L ${centerX - 40} ${sy} L ${centerX + 40} ${sy} L ${centerX + 62} ${mainY}`;
+  const d = yard.siding ? pathFrom(yard.siding) : `M ${centerX - 62} ${mainY} L ${centerX - 40} ${sy} L ${centerX + 40} ${sy} L ${centerX + 62} ${mainY}`;
   return (
     <g
       className="cursor-pointer"
@@ -383,6 +383,8 @@ export function YardShape({
     >
       <path d={d} stroke="transparent" strokeWidth={18} fill="none" />
       <path d={d} stroke="var(--rail-dim)" strokeWidth={7} fill="none" strokeLinejoin="round" />
+      <path d={d} stroke="var(--state-info)" strokeWidth={selected ? 4 : 2} fill="none" strokeLinejoin="round" />
+      {yard.spur ? <path d={pathFrom(yard.spur)} stroke="var(--state-info)" strokeWidth={3} fill="none" strokeLinejoin="round" /> : null}
       <line
         x1={centerX - 40}
         y1={sy}
@@ -396,7 +398,7 @@ export function YardShape({
         x={centerX}
         y={labelY}
         textAnchor="middle"
-        fontSize={10}
+        fontSize={11}
         fontFamily="var(--font-mono)"
         fontWeight={600}
         fill={selected ? "var(--foreground)" : "var(--muted-foreground)"}
