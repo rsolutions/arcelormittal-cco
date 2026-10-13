@@ -86,6 +86,10 @@
   --state-maint: oklch(0.68 0.13 300);
   --rail: oklch(0.62 0.012 250);
   --rail-dim: oklch(0.34 0.01 250);
+  --diagram-background: oklch(0.98 0.002 240);
+  --diagram-ink: oklch(0.19 0.005 250);
+  --diagram-free: oklch(0.66 0.19 245);
+  --diagram-blocked: oklch(0.62 0.25 26);
 }
 
 @layer base {

@@ -5,10 +5,10 @@ import type { AccessLevel, Connectivity } from "@/lib/cco/types";
 import { useHydrated } from "@/hooks/useCco";
 
 const statusColor: Record<string, string> = {
-  ONLINE: "var(--state-clear)",
-  SINCRONIZADOS: "var(--state-clear)",
-  DEGRADADO: "var(--state-caution)",
-  SINCRONIZANDO: "var(--state-caution)",
+  ONLINE: "var(--diagram-free)",
+  SINCRONIZADOS: "var(--diagram-free)",
+  DEGRADADO: "var(--diagram-blocked)",
+  SINCRONIZANDO: "var(--diagram-blocked)",
   OFFLINE: "var(--state-danger)",
   DESATUALIZADOS: "var(--state-danger)",
 };
@@ -33,8 +33,8 @@ export function CcoHeader({
     criticalAlarms > 0
       ? { label: "OPERAÇÃO EM ATENÇÃO", color: "var(--state-danger)" }
       : connectivity.overall === "DEGRADADO"
-        ? { label: "OPERAÇÃO DEGRADADA", color: "var(--state-caution)" }
-        : { label: "OPERAÇÃO NORMAL", color: "var(--state-clear)" };
+        ? { label: "OPERAÇÃO DEGRADADA", color: "var(--diagram-blocked)" }
+        : { label: "OPERAÇÃO NORMAL", color: "var(--diagram-free)" };
 
   return (
     <header className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border bg-surface px-4 py-2">
