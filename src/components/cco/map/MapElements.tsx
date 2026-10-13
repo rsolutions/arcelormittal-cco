@@ -114,7 +114,7 @@ export function SignalLamp({
         x1={signal.position.x}
         y1={signal.position.y}
         x2={signal.position.x}
-        y2={signal.position.y > 300 && signal.line !== "L1" ? signal.position.y - 10 : signal.position.y + 10}
+        y2={signal.position.y > 320 ? signal.position.y - 14 : signal.position.y + 14}
         stroke="var(--border-strong)"
         strokeWidth={1.5}
       />
@@ -136,7 +136,7 @@ export function SignalLamp({
       />
       <text
         x={signal.position.x}
-        y={signal.position.y + (signal.position.y < 300 ? -12 : 18)}
+        y={signal.position.y + (signal.position.y < 320 ? -12 : 18)}
         textAnchor="middle"
         fontSize={9}
         fontFamily="var(--font-mono)"
