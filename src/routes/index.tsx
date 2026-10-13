@@ -1,13 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import { AlarmPanel } from "@/components/cco/AlarmPanel";
+import { AssistantCard } from "@/components/cco/AssistantCard";
 import { CcoHeader } from "@/components/cco/CcoHeader";
+import { ControlBar } from "@/components/cco/ControlBar";
 import { DetailPanel } from "@/components/cco/DetailPanel";
+import { EventTimeline } from "@/components/cco/EventTimeline";
+import { KpiBar } from "@/components/cco/KpiBar";
 import { RailwayMap, type MapFilters } from "@/components/cco/RailwayMap";
 import { BootScreen } from "@/components/cco/BootScreen";
 import { useCco, useHydrated } from "@/hooks/useCco";
 import { locateObject } from "@/lib/cco/locate";
 import type { AccessLevel, SelectedObject, ViewMode } from "@/lib/cco/types";
 import { DEFAULT_VIEWPORT, centerOn, zoomViewport, type Viewport } from "@/lib/cco/viewport";
+import { controlService } from "@/services";
 
 const TITLE = "Painel Sinótico CCO — ArcelorMittal Libéria";
 const DESCRIPTION =
@@ -136,6 +142,27 @@ function CcoPanel() {
         onAccessLevelChange={setAccessLevel}
         criticalAlarms={state.kpis.criticalAlarms}
       />
+      <KpiBar kpis={state.kpis} />
+      <ControlBar
+        viewMode={viewMode}
+        onViewMode={setViewMode}
+        filters={filters}
+        onFilters={setFilters}
+        search={search}
+        onSearch={setSearch}
+        running={state.running}
+        live={state.live}
+        scenario={state.scenario}
+        onStart={controlService.start}
+        onPause={controlService.pause}
+        onReset={() => {
+          controlService.reset();
+          setSelected(null);
+          setViewport(DEFAULT_VIEWPORT);
+        }}
+        onLive={controlService.setLive}
+        onScenario={(scenario) => controlService.setScenario(scenario)}
+      />
 
       <div className="flex min-h-0 flex-1">
         <div className="flex min-h-0 flex-1 flex-col">
@@ -152,9 +179,18 @@ function CcoPanel() {
               onViewportChange={setViewport}
             />
           </div>
+          <div className="h-56 shrink-0">
+            <AlarmPanel
+              alarms={state.alarms}
+              selectedId={selected?.kind === "ALARME" ? selected.id : null}
+              onSelectAlarm={(alarm) => setSelected({ kind: "ALARME", id: alarm.id })}
+              onLocate={(alarm) => selectAndFocus({ kind: alarm.objectKind, id: alarm.objectId })}
+            />
+          </div>
         </div>
 
-        {selected && <div className="flex w-[340px] min-h-0 shrink-0 flex-col border-l border-border bg-surface 2xl:w-[380px]">
+        <div className="flex w-[340px] min-h-0 shrink-0 flex-col border-l border-border bg-surface 2xl:w-[380px]">
+          <AssistantCard hints={state.assistant} />
           <div className="min-h-0 flex-1 overflow-hidden">
             <DetailPanel
               state={state}
@@ -165,7 +201,13 @@ function CcoPanel() {
               onLocate={focus}
             />
           </div>
-        </div>}
+          <div className="h-64 shrink-0 border-t border-border">
+            <EventTimeline
+              events={state.events}
+              onFocus={(event) => selectAndFocus({ kind: event.objectKind, id: event.objectId })}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

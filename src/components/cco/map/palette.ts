@@ -17,18 +17,18 @@ export const trackColor: Record<TrackStatus, string> = {
 };
 
 export const aspectColor: Record<SignalAspect, string> = {
-  VERDE: "var(--diagram-free)",
-  AMARELO: "var(--diagram-blocked)",
-  VERMELHO: "var(--diagram-blocked)",
-  CINZA: "var(--diagram-blocked)",
+  VERDE: "var(--state-clear)",
+  AMARELO: "var(--state-caution)",
+  VERMELHO: "var(--state-danger)",
+  CINZA: "var(--state-offline)",
 };
 
 export const switchColor: Record<SwitchStatus, string> = {
-  NORMAL: "var(--diagram-free)",
-  REVERSO: "var(--diagram-free)",
-  OCUPADO: "var(--diagram-blocked)",
-  FALHA: "var(--diagram-blocked)",
-  SEM_COMUNICACAO: "var(--diagram-blocked)",
+  NORMAL: "var(--state-clear)",
+  REVERSO: "var(--state-caution)",
+  OCUPADO: "var(--state-danger)",
+  FALHA: "var(--state-high)",
+  SEM_COMUNICACAO: "var(--state-offline)",
 };
 
 export const trainColor: Record<TrainStatus, string> = {

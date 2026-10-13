@@ -87,7 +87,7 @@ export function SignalLamp({
           [
             `SINAL ${signal.id}`,
             formatKm(signal.km),
-            `Estado: ${signal.aspect === "VERDE" && signal.status === "ONLINE" ? "Livre" : "Bloqueio"}`,
+            `Aspecto: ${signal.aspect}`,
             `Sentido: ${signal.direction}`,
             `Comunicação: ${signal.status}`,
           ],
@@ -277,15 +277,12 @@ export function TrainMarker({
   selected,
   dimmed,
 }: MapItemProps & { train: Train; segment?: TrackSegment | undefined }) {
-  const angle = (segment ? headingAt(segment.points, train.progress) : 0) +
-    (train.direction === "OESTE" || train.direction === "SUL" ? 180 : 0);
+  const angle = segment ? headingAt(segment.points, train.progress) : 0;
   const color = trainColor[train.status];
   return (
     <g
       opacity={dimmed ? 0.4 : 1}
       className="cursor-pointer"
-      role="button"
-      aria-label={`Trem ${train.id} — sentido ${train.direction}`}
       onClick={onSelect}
       onMouseMove={(e) =>
         onHover(
