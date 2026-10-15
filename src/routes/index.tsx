@@ -58,7 +58,9 @@ function CcoPanel() {
   const focus = useCallback(
     (selection: SelectedObject) => {
       const point = locateObject(state, selection.kind, selection.id);
-      if (point) setViewport((current) => centerOn(current, point, 620));
+      if (point) setViewport((current) => selection.kind === "PATIO"
+        ? { x: point.x - 200, y: point.y - 125, w: 400, h: 440 }
+        : centerOn(current, point, 620));
     },
     [state],
   );

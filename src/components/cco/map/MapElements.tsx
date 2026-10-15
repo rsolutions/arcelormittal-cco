@@ -367,6 +367,7 @@ export function YardShape({ yard, onSelect, onHover, selected, detailed }: MapIt
     <g className="cursor-pointer" data-yard={yard.id} role="button" aria-label={`Pátio ${yard.name}`}
       onClick={onSelect} onMouseMove={(event) => onHover([yard.name, `Projeto AML · folha ${layout?.sheet ?? "—"}`, formatKm(yard.km)], event)}
       onMouseLeave={() => onHover(null)}>
+      <rect x={yard.position.x} y={yard.position.y - 110} width={yard.width} height={380} fill="transparent" />
       {tracks.map((points, index) => <g key={index}>
         <path d={pathFrom(points)} stroke="transparent" strokeWidth={20} fill="none" />
         <path d={pathFrom(points)} stroke="var(--rail-dim)" strokeWidth={7} fill="none" />
