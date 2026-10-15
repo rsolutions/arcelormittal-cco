@@ -58,7 +58,9 @@ function CcoPanel() {
   const focus = useCallback(
     (selection: SelectedObject) => {
       const point = locateObject(state, selection.kind, selection.id);
-      if (point) setViewport((current) => centerOn(current, point, 620));
+      if (point) setViewport((current) => selection.kind === "PATIO"
+        ? { x: point.x - 200, y: point.y - 125, w: 400, h: 440 }
+        : centerOn(current, point, 620));
     },
     [state],
   );
@@ -173,7 +175,7 @@ function CcoPanel() {
               viewMode={viewMode}
               selected={selected}
               onSelect={(selection) =>
-                selection.kind === "TREM" ? selectAndFocus(selection) : setSelected(selection)
+                (selection.kind === "TREM" || selection.kind === "PATIO") ? selectAndFocus(selection) : setSelected(selection)
               }
               viewport={viewport}
               onViewportChange={setViewport}

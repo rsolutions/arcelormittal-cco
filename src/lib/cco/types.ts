@@ -56,6 +56,9 @@ export interface TrackSegment {
 
 export interface Signal {
   id: string;
+  label?: string;
+  anchor?: Point;
+  labelPoint?: Point;
   km: number;
   direction: Direction;
   line: LineId;
@@ -82,6 +85,8 @@ export interface Station {
 
 export interface RailSwitch {
   id: string;
+  label?: string;
+  labelPoint?: Point;
   km: number;
   line: LineId;
   position: SwitchPosition;
@@ -103,6 +108,16 @@ export interface Yard {
   tracksTotal: number;
   siding?: Point[];
   spur?: Point[];
+  layout?: YardLayout;
+}
+
+export interface YardLayout {
+  tracks: Point[][];
+  switches: { point: Point; branch: Point; label: string; labelPoint: Point }[];
+  signals: { label: string; point: Point; anchor: Point; labelPoint: Point; direction: Direction }[];
+  dimensions: { from: Point; to: Point; label: string }[];
+  labelPoint: Point;
+  sheet: number;
 }
 
 export interface KmMarker {
