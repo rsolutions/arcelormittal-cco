@@ -173,7 +173,7 @@ function CcoPanel() {
               viewMode={viewMode}
               selected={selected}
               onSelect={(selection) =>
-                selection.kind === "TREM" ? selectAndFocus(selection) : setSelected(selection)
+                (selection.kind === "TREM" || selection.kind === "PATIO") ? selectAndFocus(selection) : setSelected(selection)
               }
               viewport={viewport}
               onViewportChange={setViewport}

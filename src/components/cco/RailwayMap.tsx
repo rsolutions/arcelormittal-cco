@@ -102,6 +102,7 @@ export function RailwayMap({
     onViewportChange(zoomViewport(viewport, e.deltaY > 0 ? 1.12 : 0.89));
   };
 
+  const detailed = viewport.w < 1000;
   const activeAlarms = state.alarms.filter((a) => !a.resolved);
   const showTrains = filters.trains && viewMode !== "ALARMES";
   const dimNonAlarm = viewMode === "ALARMES";
@@ -150,6 +151,7 @@ export function RailwayMap({
           <YardShape
             key={yard.id}
             yard={yard}
+            detailed={detailed}
             selected={isSelected("PATIO", yard.id)}
             onSelect={() => onSelect({ kind: "PATIO", id: yard.id })}
             onHover={handleHover}
@@ -185,6 +187,7 @@ export function RailwayMap({
               <SwitchNode
                 key={item.id}
                 item={item}
+                detailed={detailed}
                 selected={isSelected("AMV", item.id)}
                 dimmed={dimNonAlarm && item.status !== "FALHA" && item.status !== "SEM_COMUNICACAO"}
                 onSelect={() => onSelect({ kind: "AMV", id: item.id })}
@@ -216,6 +219,7 @@ export function RailwayMap({
               <SignalLamp
                 key={signal.id}
                 signal={signal}
+                detailed={detailed}
                 selected={isSelected("SINAL", signal.id)}
                 dimmed={dimNonAlarm && signal.status === "ONLINE"}
                 onSelect={() => onSelect({ kind: "SINAL", id: signal.id })}

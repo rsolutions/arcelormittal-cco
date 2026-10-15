@@ -15,6 +15,7 @@ export interface MapItemProps {
   onHover: (lines: string[] | null, event?: React.MouseEvent) => void;
   selected: boolean;
   dimmed?: boolean;
+  detailed?: boolean;
 }
 
 /** RailwayLine / TrackSegment */
@@ -88,6 +89,7 @@ export function SignalLamp({
   onHover,
   selected,
   dimmed,
+  detailed,
 }: MapItemProps & { signal: Signal }) {
   const color = aspectColor[signal.aspect];
   const critical = signal.status === "FALHA";
@@ -114,7 +116,7 @@ export function SignalLamp({
         x1={signal.position.x}
         y1={signal.position.y}
         x2={signal.position.x}
-        y2={signal.position.y > 320 ? signal.position.y - 14 : signal.position.y + 14}
+        y2={signal.anchor?.y ?? (signal.position.y > 320 ? signal.position.y - 14 : signal.position.y + 14)}
         stroke="var(--border-strong)"
         strokeWidth={1.5}
       />
@@ -134,16 +136,16 @@ export function SignalLamp({
         color={color}
         className={critical ? "lamp-strong pulse-critical" : "lamp"}
       />
-      <text
-        x={signal.position.x}
-        y={signal.position.y + (signal.position.y < 320 ? -12 : 18)}
+      {detailed || selected ? <text
+        x={signal.labelPoint?.x ?? signal.position.x}
+        y={signal.labelPoint?.y ?? signal.position.y + (signal.position.y < 320 ? -12 : 18)}
         textAnchor="middle"
         fontSize={9}
         fontFamily="var(--font-mono)"
         fill="var(--muted-foreground)"
       >
-        {signal.id}
-      </text>
+        {signal.label ?? signal.id}
+      </text> : null}
     </g>
   );
 }
@@ -229,6 +231,7 @@ export function SwitchNode({
   onHover,
   selected,
   dimmed,
+  detailed,
 }: MapItemProps & { item: RailSwitch }) {
   const color = switchColor[item.status];
   return (
@@ -269,15 +272,15 @@ export function SwitchNode({
         color={color}
         className={item.status === "FALHA" ? "lamp-strong pulse-critical" : "lamp"}
       />
-      <text
-        x={item.branch.x + 6}
-        y={item.branch.y + 4}
+      {detailed || selected ? <text
+        x={item.labelPoint?.x ?? item.branch.x + 6}
+        y={item.labelPoint?.y ?? item.branch.y + 4}
         fontSize={8}
         fontFamily="var(--font-mono)"
         fill="var(--muted-foreground)"
       >
-        {item.id}
-      </text>
+        {item.label ?? item.id}
+      </text> : null}
     </g>
   );
 }
@@ -355,56 +358,37 @@ export function TrainMarker({
   );
 }
 
-/** Yard — single siding ("risco") parallel to the main line */
-export function YardShape({
-  yard,
-  onSelect,
-  onHover,
-  selected,
-}: MapItemProps & { yard: Yard }) {
-  const mainY = 320;
-  const above = yard.position.y < mainY;
-  const centerX = yard.position.x + yard.width / 2;
-  const sy = yard.siding?.[1]?.y ?? (above ? mainY - 40 : mainY + 40);
-  const labelY = yard.siding ? mainY + 142 : (above ? sy - 12 : sy + 20);
-  const occupied = yard.tracksInUse > 0;
-  const d = yard.siding ? pathFrom(yard.siding) : `M ${centerX - 62} ${mainY} L ${centerX - 40} ${sy} L ${centerX + 40} ${sy} L ${centerX + 62} ${mainY}`;
+/** Yard geometry, device placement and dimensions share the PDF layout. */
+export function YardShape({ yard, onSelect, onHover, selected, detailed }: MapItemProps & { yard: Yard }) {
+  const layout = yard.layout;
+  const tracks = layout?.tracks ?? [yard.siding ?? []];
+  const label = layout?.labelPoint ?? { x: yard.position.x + yard.width / 2, y: yard.position.y + 142 };
   return (
-    <g
-      className="cursor-pointer"
-      onClick={onSelect}
-      onMouseMove={(e) =>
-        onHover(
-          [yard.name, formatKm(yard.km), `Desvio: ${occupied ? "OCUPADO" : "LIVRE"}`],
-          e,
-        )
-      }
-      onMouseLeave={() => onHover(null)}
-    >
-      <path d={d} stroke="transparent" strokeWidth={18} fill="none" />
-      <path d={d} stroke="var(--rail-dim)" strokeWidth={7} fill="none" strokeLinejoin="round" />
-      <path d={d} stroke="var(--state-info)" strokeWidth={selected ? 4 : 2} fill="none" strokeLinejoin="round" />
-      {yard.spur ? <path d={pathFrom(yard.spur)} stroke="var(--state-info)" strokeWidth={3} fill="none" strokeLinejoin="round" /> : null}
-      <line
-        x1={centerX - 40}
-        y1={sy}
-        x2={centerX + 40}
-        y2={sy}
-        stroke={occupied ? "var(--state-danger)" : "var(--state-info)"}
-        strokeWidth={selected ? 6 : 4}
-        strokeLinecap="round"
-      />
-      <text
-        x={centerX}
-        y={labelY}
-        textAnchor="middle"
-        fontSize={11}
-        fontFamily="var(--font-mono)"
-        fontWeight={600}
-        fill={selected ? "var(--foreground)" : "var(--muted-foreground)"}
-      >
+    <g className="cursor-pointer" data-yard={yard.id} role="button" aria-label={`Pátio ${yard.name}`}
+      onClick={onSelect} onMouseMove={(event) => onHover([yard.name, `Projeto AML · folha ${layout?.sheet ?? "—"}`, formatKm(yard.km)], event)}
+      onMouseLeave={() => onHover(null)}>
+      {tracks.map((points, index) => <g key={index}>
+        <path d={pathFrom(points)} stroke="transparent" strokeWidth={20} fill="none" />
+        <path d={pathFrom(points)} stroke="var(--rail-dim)" strokeWidth={7} fill="none" />
+        <path d={pathFrom(points)} stroke="var(--state-info)" strokeWidth={selected ? 4 : 3} fill="none" />
+      </g>)}
+      <text x={label.x} y={label.y} textAnchor="middle" fontSize={detailed ? 12 : 22}
+        fontFamily="var(--font-mono)" fontWeight={600} fill={selected ? "var(--foreground)" : "var(--muted-foreground)"}>
         {yard.name}
       </text>
+      {detailed && layout ? <g pointerEvents="none">
+        {layout.dimensions.map((dimension, index) => <g key={index} data-dimension={dimension.label}>
+          <line x1={dimension.from.x} y1={dimension.from.y} x2={dimension.to.x} y2={dimension.to.y} stroke="var(--muted-foreground)" strokeWidth={0.7} />
+          {[dimension.from, dimension.to].map((point, end) => <path key={end}
+            d={`M ${point.x} ${point.y - 4} L ${point.x} ${point.y + 4} M ${point.x + (end ? -4 : 4)} ${point.y - 3} L ${point.x} ${point.y} L ${point.x + (end ? -4 : 4)} ${point.y + 3}`}
+            stroke="var(--muted-foreground)" strokeWidth={0.7} fill="none" />)}
+          <text x={(dimension.from.x + dimension.to.x) / 2} y={dimension.from.y - 7}
+            textAnchor="middle" fontSize={9} fontFamily="var(--font-mono)" fill="var(--muted-foreground)">{dimension.label}</text>
+        </g>)}
+        <text x={label.x} y={label.y + 19} textAnchor="middle" fontSize={8} fontFamily="var(--font-mono)" fill="var(--muted-foreground)">
+          AML-SIG-MKS-0001 · FOLHA {layout.sheet}/13 · S/E
+        </text>
+      </g> : null}
     </g>
   );
 }
