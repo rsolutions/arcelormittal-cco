@@ -131,7 +131,8 @@ let switchNumber = 1;
 export const SWITCHES: RailSwitch[] = YARDS.flatMap((yard) =>
   (yard.layout?.switches ?? []).map((item) => ({
     id: `AMV-${String(switchNumber++).padStart(2, "0")}`,
-    label: item.label, labelPoint: item.labelPoint, km: yard.km,
+    label: item.label, labelPoint: item.labelPoint, symbolPoint: item.symbolPoint,
+    crossoverType: item.crossoverType, yardName: yard.name, km: yard.km,
     line: "L1" as const, position: "NORMAL" as const, status: "NORMAL" as const,
     occupancy: null, point: item.point, branch: item.branch, lastUpdate: 0,
   })),

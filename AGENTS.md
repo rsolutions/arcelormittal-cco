@@ -9,4 +9,4 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Yard tracks, switch endpoints, signal anchors, labels and documented dimensions belong to the shared Yard layout; all map objects derive from it to prevent divergent geometry. Schematic yard paths remain presentation geometry, separate from simulated main-line routing.
+- Yard tracks, turnout endpoints, detached device symbols, crossover types, signal anchors, labels and documented dimensions belong to the shared Yard layout; all map objects derive from it to prevent divergent geometry. Preserve drawing clearances separately from dimension values because AML sheets are unscaled. Schematic yard paths remain presentation geometry, separate from simulated main-line routing.
