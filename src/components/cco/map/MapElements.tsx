@@ -259,6 +259,8 @@ export function SwitchNode({
       }
       onMouseLeave={() => onHover(null)}
     >
+      <rect x={(item.symbolPoint?.x ?? item.point.x) - 9}
+        y={(item.symbolPoint?.y ?? item.point.y) - 20} width={18} height={38} fill="transparent" />
       {!item.symbolPoint ? <line
         x1={item.point.x}
         y1={item.point.y}
