@@ -87,6 +87,9 @@ export interface RailSwitch {
   id: string;
   label?: string;
   labelPoint?: Point;
+  symbolPoint?: Point;
+  crossoverType?: "SPRING" | "MANUAL";
+  yardName?: string;
   km: number;
   line: LineId;
   position: SwitchPosition;
@@ -113,7 +116,7 @@ export interface Yard {
 
 export interface YardLayout {
   tracks: Point[][];
-  switches: { point: Point; branch: Point; label: string; labelPoint: Point }[];
+  switches: { point: Point; branch: Point; symbolPoint: Point; label: string; labelPoint: Point; crossoverType: "SPRING" | "MANUAL" }[];
   signals: { label: string; point: Point; anchor: Point; labelPoint: Point; direction: Direction }[];
   dimensions: { from: Point; to: Point; label: string }[];
   labelPoint: Point;

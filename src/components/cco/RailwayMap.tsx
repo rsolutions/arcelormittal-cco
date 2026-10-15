@@ -293,6 +293,8 @@ export function RailwayMap({
       </button>
 
       <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-x-4 gap-y-1 rounded border border-border bg-surface/90 px-3 py-2">
+        <span className="font-mono text-[9px] text-muted-foreground">SC1 · Spring Crossover</span>
+        <span className="font-mono text-[9px] text-muted-foreground">MC1 · Manual Crossover</span>
         <Legend color="var(--rail)" label="Normal" />
         <Legend color="var(--state-danger)" label="Ocupado" />
         <Legend color="var(--state-maint)" label="Manutenção" />

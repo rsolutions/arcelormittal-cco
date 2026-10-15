@@ -132,6 +132,7 @@ function SignalDetails({ state, id }: { state: CcoState; id: string }) {
   return (
     <div className="space-y-2">
       <Title label="Sinal / controladora" value={`SINAL ${signal.id}`} />
+      <Row label="Identificação no projeto" value={signal.label ?? signal.id} />
       <div className="flex items-center gap-2 rounded border border-border bg-surface-2 px-3 py-2">
         <span
           className="h-4 w-4 rounded-full lamp"
@@ -246,6 +247,9 @@ function SwitchDetails({
   return (
     <div className="space-y-2">
       <Title label="AMV / desvio" value={item.id} color={switchColor[item.status]} />
+      <Row label="Identificação no projeto" value={item.label ?? item.id} />
+      {item.crossoverType ? <Row label="Tipo" value={item.crossoverType === "MANUAL" ? "Manual Crossover" : "Spring Crossover"} /> : null}
+      {item.yardName ? <Row label="Pátio" value={item.yardName} /> : null}
       <Row label="Localização" value={formatKm(item.km)} />
       <Row label="Linha" value={LINE_LABELS[item.line]} />
       <Row label="Posição" value={item.position} color={switchColor[item.status]} />
