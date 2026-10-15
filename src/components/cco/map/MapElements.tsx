@@ -171,8 +171,6 @@ export function StationNode({
     <g
       opacity={dimmed ? 0.45 : 1}
       className="cursor-pointer"
-      data-switch={item.id}
-      aria-label={`${item.label ?? item.id} — ${item.crossoverType === "MANUAL" ? "Manual Crossover" : "Spring Crossover"}`}
       onClick={onSelect}
       onMouseMove={(e) =>
         onHover(
@@ -243,6 +241,8 @@ export function SwitchNode({
     <g
       opacity={dimmed ? 0.45 : 1}
       className="cursor-pointer"
+      data-switch={item.id}
+      aria-label={`${item.label ?? item.id} — ${item.crossoverType === "MANUAL" ? "Manual Crossover" : "Spring Crossover"}`}
       onClick={onSelect}
       onMouseMove={(e) =>
         onHover(
