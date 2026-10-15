@@ -97,11 +97,14 @@ export function SignalLamp({
     <g
       opacity={dimmed ? 0.4 : 1}
       className="cursor-pointer"
+      data-signal={signal.id}
+      aria-label={`Sinal ${signal.label ?? signal.id}`}
       onClick={onSelect}
       onMouseMove={(e) =>
         onHover(
           [
             `SINAL ${signal.id}`,
+            `Projeto: ${signal.label ?? signal.id}`,
             formatKm(signal.km),
             `Aspecto: ${signal.aspect}`,
             `Sentido: ${signal.direction}`,
@@ -136,7 +139,7 @@ export function SignalLamp({
         color={color}
         className={critical ? "lamp-strong pulse-critical" : "lamp"}
       />
-      {detailed || selected ? <text
+      {signal.label || detailed || selected ? <text
         x={signal.labelPoint?.x ?? signal.position.x}
         y={signal.labelPoint?.y ?? signal.position.y + (signal.position.y < 320 ? -12 : 18)}
         textAnchor="middle"
@@ -168,6 +171,8 @@ export function StationNode({
     <g
       opacity={dimmed ? 0.45 : 1}
       className="cursor-pointer"
+      data-switch={item.id}
+      aria-label={`${item.label ?? item.id} — ${item.crossoverType === "MANUAL" ? "Manual Crossover" : "Spring Crossover"}`}
       onClick={onSelect}
       onMouseMove={(e) =>
         onHover(
@@ -243,6 +248,7 @@ export function SwitchNode({
         onHover(
           [
             `AMV ${item.id}`,
+            `${item.label ?? item.id} — ${item.crossoverType === "MANUAL" ? "Manual Crossover" : "Spring Crossover"}`,
             formatKm(item.km),
             `Posição: ${item.position}`,
             `Estado: ${item.status.replace("_", " ")}`,
@@ -253,7 +259,7 @@ export function SwitchNode({
       }
       onMouseLeave={() => onHover(null)}
     >
-      <line
+      {!item.symbolPoint ? <line
         x1={item.point.x}
         y1={item.point.y}
         x2={item.branch.x}
@@ -261,20 +267,26 @@ export function SwitchNode({
         stroke={color}
         strokeWidth={item.position === "REVERSO" ? 4 : 2}
         strokeLinecap="round"
-      />
+      /> : null}
+      {item.symbolPoint ? <g transform={`translate(${item.symbolPoint.x} ${item.symbolPoint.y})`}>
+        <rect x={-5} y={-3} width={10} height={6} fill="var(--background)" stroke={color} strokeWidth={1.2} />
+        <path d={item.crossoverType === "MANUAL" ? "M -3 5 H 3" : "M 0 4 V 7 L -2 8 L 2 10 L -2 12 L 2 14"}
+          fill="none" stroke={color} strokeWidth={1} />
+      </g> : null}
       <circle
-        cx={item.point.x}
-        cy={item.point.y}
-        r={selected ? 6 : 4.5}
+        cx={item.symbolPoint?.x ?? item.point.x}
+        cy={item.symbolPoint?.y ?? item.point.y}
+        r={item.symbolPoint ? (selected ? 2.5 : 1.5) : (selected ? 6 : 4.5)}
         fill={color}
         stroke={selected ? "var(--foreground)" : "var(--background)"}
         strokeWidth={1.5}
         color={color}
         className={item.status === "FALHA" ? "lamp-strong pulse-critical" : "lamp"}
       />
-      {detailed || selected ? <text
+      {item.label || detailed || selected ? <text
         x={item.labelPoint?.x ?? item.branch.x + 6}
         y={item.labelPoint?.y ?? item.branch.y + 4}
+        textAnchor={item.labelPoint ? "middle" : "start"}
         fontSize={8}
         fontFamily="var(--font-mono)"
         fill="var(--muted-foreground)"
@@ -370,7 +382,7 @@ export function YardShape({ yard, onSelect, onHover, selected, detailed }: MapIt
       <rect x={yard.position.x} y={yard.position.y - 110} width={yard.width} height={380} fill="transparent" />
       {tracks.map((points, index) => <g key={index}>
         <path d={pathFrom(points)} stroke="transparent" strokeWidth={20} fill="none" />
-        <path d={pathFrom(points)} stroke="var(--rail-dim)" strokeWidth={7} fill="none" />
+        <path d={pathFrom(points)} stroke="var(--rail-dim)" strokeWidth={5} fill="none" />
         <path d={pathFrom(points)} stroke="var(--state-info)" strokeWidth={selected ? 4 : 3} fill="none" />
       </g>)}
       <text x={label.x} y={label.y} textAnchor="middle" fontSize={detailed ? 12 : 22}
