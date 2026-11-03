@@ -1,16 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { AlarmPanel } from "@/components/cco/AlarmPanel";
 import { AssistantCard } from "@/components/cco/AssistantCard";
 import { CcoHeader } from "@/components/cco/CcoHeader";
 import { ControlBar } from "@/components/cco/ControlBar";
 import { DetailPanel } from "@/components/cco/DetailPanel";
-import { EventTimeline } from "@/components/cco/EventTimeline";
-import { KpiBar } from "@/components/cco/KpiBar";
 import { RailwayMap, type MapFilters } from "@/components/cco/RailwayMap";
 import { BootScreen } from "@/components/cco/BootScreen";
 import { useCco, useHydrated } from "@/hooks/useCco";
 import { locateObject } from "@/lib/cco/locate";
+import { projectSchematicPoint } from "@/lib/cco/schematic-layout";
 import type { AccessLevel, SelectedObject, ViewMode } from "@/lib/cco/types";
 import { DEFAULT_VIEWPORT, centerOn, zoomViewport, type Viewport } from "@/lib/cco/viewport";
 import { controlService } from "@/services";
@@ -57,7 +55,8 @@ function CcoPanel() {
 
   const focus = useCallback(
     (selection: SelectedObject) => {
-      const point = locateObject(state, selection.kind, selection.id);
+      const location = locateObject(state, selection.kind, selection.id);
+      const point = location ? projectSchematicPoint(location) : null;
       if (point) setViewport((current) => selection.kind === "PATIO"
         ? { x: point.x - 200, y: point.y - 125, w: 400, h: 440 }
         : centerOn(current, point, 620));
@@ -144,7 +143,6 @@ function CcoPanel() {
         onAccessLevelChange={setAccessLevel}
         criticalAlarms={state.kpis.criticalAlarms}
       />
-      <KpiBar kpis={state.kpis} />
       <ControlBar
         viewMode={viewMode}
         onViewMode={setViewMode}
@@ -166,51 +164,40 @@ function CcoPanel() {
         onScenario={(scenario) => controlService.setScenario(scenario)}
       />
 
-      <div className="flex min-h-0 flex-1">
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="min-h-0 flex-1">
-            <RailwayMap
-              state={state}
-              filters={filters}
-              viewMode={viewMode}
-              selected={selected}
-              onSelect={(selection) =>
-                (selection.kind === "TREM" || selection.kind === "PATIO") ? selectAndFocus(selection) : setSelected(selection)
-              }
-              viewport={viewport}
-              onViewportChange={setViewport}
-            />
-          </div>
-          <div className="h-56 shrink-0">
-            <AlarmPanel
-              alarms={state.alarms}
-              selectedId={selected?.kind === "ALARME" ? selected.id : null}
-              onSelectAlarm={(alarm) => setSelected({ kind: "ALARME", id: alarm.id })}
-              onLocate={(alarm) => selectAndFocus({ kind: alarm.objectKind, id: alarm.objectId })}
-            />
-          </div>
+      <main className="relative flex min-h-0 flex-1">
+        <div className="min-h-0 min-w-0 flex-1">
+          <RailwayMap
+            state={state}
+            filters={filters}
+            viewMode={viewMode}
+            selected={selected}
+            onSelect={(selection) =>
+              (selection.kind === "TREM" || selection.kind === "PATIO") ? selectAndFocus(selection) : setSelected(selection)
+            }
+            viewport={viewport}
+            onViewportChange={setViewport}
+          />
         </div>
 
-        <div className="flex w-[340px] min-h-0 shrink-0 flex-col border-l border-border bg-surface 2xl:w-[380px]">
-          <AssistantCard hints={state.assistant} />
-          <div className="min-h-0 flex-1 overflow-hidden">
-            <DetailPanel
-              state={state}
-              selected={selected}
-              accessLevel={accessLevel}
-              onClose={() => setSelected(null)}
-              onSelect={setSelected}
-              onLocate={focus}
-            />
-          </div>
-          <div className="h-64 shrink-0 border-t border-border">
-            <EventTimeline
-              events={state.events}
-              onFocus={(event) => selectAndFocus({ kind: event.objectKind, id: event.objectId })}
-            />
-          </div>
-        </div>
-      </div>
+        {selected ? (
+          <section
+            aria-label="Informações do objeto selecionado"
+            className="absolute inset-y-0 right-0 z-10 flex min-h-0 w-[min(340px,100%)] shrink-0 flex-col border-l border-border bg-surface shadow-xl sm:static sm:shadow-none 2xl:w-[380px]"
+          >
+            <AssistantCard hints={state.assistant} />
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <DetailPanel
+                state={state}
+                selected={selected}
+                accessLevel={accessLevel}
+                onClose={() => setSelected(null)}
+                onSelect={setSelected}
+                onLocate={focus}
+              />
+            </div>
+          </section>
+        ) : null}
+      </main>
     </div>
   );
 }

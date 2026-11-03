@@ -1,4 +1,4 @@
-import { MAP_VIEWBOX } from "./network";
+import { SCHEMATIC_VIEWBOX } from "./schematic-layout";
 import type { Point } from "./types";
 
 export interface Viewport {
@@ -9,14 +9,14 @@ export interface Viewport {
 }
 
 export const DEFAULT_VIEWPORT: Viewport = {
-  x: MAP_VIEWBOX.x,
-  y: MAP_VIEWBOX.y,
-  w: MAP_VIEWBOX.width,
-  h: MAP_VIEWBOX.height,
+  x: SCHEMATIC_VIEWBOX.x,
+  y: SCHEMATIC_VIEWBOX.y,
+  w: SCHEMATIC_VIEWBOX.width,
+  h: SCHEMATIC_VIEWBOX.height,
 };
 
 const MIN_W = 260;
-const MAX_W = MAP_VIEWBOX.width * 1.4;
+const MAX_W = SCHEMATIC_VIEWBOX.width * 1.4;
 
 export function zoomViewport(vp: Viewport, factor: number): Viewport {
   const cx = vp.x + vp.w / 2;
