@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { Radio, ServerCog, Database, Cpu, TrainFront } from "lucide-react";
 import { formatClock, formatDate } from "@/lib/cco/geometry";
-import type { AccessLevel, Connectivity } from "@/lib/cco/types";
+import type { AccessLevel, Alarm, Connectivity, SelectedObject } from "@/lib/cco/types";
 import { useHydrated } from "@/hooks/useCco";
+import { AlertsDialog } from "./AlertsDialog";
 
 const statusColor: Record<string, string> = {
   ONLINE: "var(--state-clear)",
@@ -20,6 +21,8 @@ export function CcoHeader({
   accessLevel,
   onAccessLevelChange,
   criticalAlarms,
+  alarms,
+  onSelectAlert,
 }: {
   connectivity: Connectivity;
   clock: number;
@@ -27,6 +30,8 @@ export function CcoHeader({
   accessLevel: AccessLevel;
   onAccessLevelChange: (level: AccessLevel) => void;
   criticalAlarms: number;
+  alarms: Alarm[];
+  onSelectAlert: (selection: SelectedObject) => void;
 }) {
   const hydrated = useHydrated();
   const operationStatus =
@@ -65,14 +70,31 @@ export function CcoHeader({
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
-        <StatusChip icon={<Radio className="h-3.5 w-3.5" />} label="Comunicação" value={connectivity.comms} />
-        <StatusChip icon={<ServerCog className="h-3.5 w-3.5" />} label="Servidor" value={connectivity.server} />
-        <StatusChip icon={<Database className="h-3.5 w-3.5" />} label="Banco" value={connectivity.database} />
-        <StatusChip icon={<Cpu className="h-3.5 w-3.5" />} label="Dispositivos" value={connectivity.devices} />
+        <StatusChip
+          icon={<Radio className="h-3.5 w-3.5" />}
+          label="Comunicação"
+          value={connectivity.comms}
+        />
+        <StatusChip
+          icon={<ServerCog className="h-3.5 w-3.5" />}
+          label="Servidor"
+          value={connectivity.server}
+        />
+        <StatusChip
+          icon={<Database className="h-3.5 w-3.5" />}
+          label="Banco"
+          value={connectivity.database}
+        />
+        <StatusChip
+          icon={<Cpu className="h-3.5 w-3.5" />}
+          label="Dispositivos"
+          value={connectivity.devices}
+        />
         <StatusChip label="Dados" value={connectivity.sync} />
       </div>
 
       <div className="ml-auto flex items-center gap-4">
+        <AlertsDialog alarms={alarms} onSelect={onSelectAlert} />
         <Link
           to="/historico"
           className="rounded border border-border-strong px-2.5 py-1 font-mono text-[10px] tracking-widest text-muted-foreground uppercase transition-colors hover:text-foreground"

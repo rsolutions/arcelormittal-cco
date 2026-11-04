@@ -7,6 +7,7 @@
  * real transport requires no UI changes.
  */
 import { pointAt } from "@/lib/cco/geometry";
+import { simulatedSignalAspect } from "@/lib/cco/simulation-aspect";
 import {
   KM_MARKERS,
   ROUTES,
@@ -26,7 +27,6 @@ import type {
   CcoState,
   ObjectKind,
   ScenarioId,
-  Signal,
   TrackSegment,
   Train,
 } from "@/lib/cco/types";
@@ -212,7 +212,6 @@ class SimulationEngine {
     if (this.state.running) {
       this.moveTrains();
       this.applyScenarioTick();
-      this.randomEvents();
     }
     this.recompute();
     this.emit();
@@ -287,53 +286,6 @@ class SimulationEngine {
     });
   }
 
-  private randomEvents() {
-    if (Math.random() < 0.04) {
-      const train = this.state.trains[Math.floor(Math.random() * this.state.trains.length)]!;
-      train.delay = Math.round((train.delay + 1 + Math.random() * 2) * 10) / 10;
-      if (train.delay >= 4) {
-        this.raiseAlarm(
-          "ATRASO",
-          "MEDIO",
-          train.id,
-          "TREM",
-          `Atraso Trem ${train.id} — +${Math.round(train.delay)} min`,
-        );
-      }
-    }
-    if (Math.random() < 0.02) {
-      const signal = this.state.signals[Math.floor(Math.random() * this.state.signals.length)]!;
-      if (signal.status === "ONLINE") {
-        signal.status = "OFFLINE";
-        signal.aspect = "CINZA";
-        signal.lastUpdate = Date.now();
-        signal.lastEvent = "Perda de comunicação";
-        this.raiseAlarm(
-          "SEM_COMUNICACAO",
-          "ALTO",
-          signal.id,
-          "SINAL",
-          `Perda de comunicação com o sinal ${signal.id}`,
-        );
-        this.publish("DEVICE_OFFLINE", { id: signal.id });
-      }
-    }
-    if (Math.random() < 0.05) {
-      const offline = this.state.signals.filter((s) => s.status === "OFFLINE");
-      const target = offline[Math.floor(Math.random() * offline.length)];
-      if (target) {
-        target.status = "ONLINE";
-        target.lastUpdate = Date.now();
-        target.lastEvent = "Comunicação restabelecida";
-        this.log(`Comunicação restabelecida — ${target.id}`, target.id, "SINAL", "INFO");
-        this.state.alarms = this.state.alarms.map((a) =>
-          a.objectId === target.id && a.type === "SEM_COMUNICACAO" ? { ...a, resolved: true } : a,
-        );
-        this.publish("DEVICE_ONLINE", { id: target.id });
-      }
-    }
-  }
-
   private applyScenarioTick() {
     if (this.state.scenario === "ATRASO") {
       const train = this.state.trains.find((t) => t.id === "3021");
@@ -371,7 +323,10 @@ class SimulationEngine {
 
     this.state.signals.forEach((signal) => {
       const previous = signal.aspect;
-      signal.aspect = this.aspectFor(signal);
+      signal.aspect = simulatedSignalAspect(
+        signal,
+        this.state.segments.find((segment) => segment.id === signal.protects),
+      );
       if (previous !== signal.aspect) {
         signal.lastUpdate = Date.now();
         signal.lastEvent = `Mudança para ${signal.aspect}`;
@@ -442,17 +397,6 @@ class SimulationEngine {
       hints.push(`Trem ${held[0]!.id} retido aguardando liberação de trecho à frente.`);
     if (!hints.length) hints.push("Circulação estável — nenhum evento crítico previsto.");
     this.state.assistant = hints.slice(0, 4);
-  }
-
-  private aspectFor(signal: Signal): Signal["aspect"] {
-    if (signal.status === "OFFLINE") return "CINZA";
-    if (signal.status === "FALHA") return "VERMELHO";
-    const protects = this.state.segments.find((s) => s.id === signal.protects);
-    if (!protects) return "VERMELHO";
-    if (protects.status === "OCUPADO" || protects.status === "BLOQUEADO") return "VERMELHO";
-    if (protects.status === "MANUTENCAO" || protects.status === "FALHA") return "VERMELHO";
-    if (protects.status === "SEM_COMUNICACAO") return "VERMELHO";
-    return "AZUL";
   }
 
   // ----- operator commands ----------------------------------------------
@@ -548,6 +492,15 @@ class SimulationEngine {
           "SINAL",
           "Equipamento S-109 sem comunicação",
         );
+        if (sw) {
+          this.raiseAlarm(
+            "SEM_COMUNICACAO",
+            "ALTO",
+            sw.id,
+            "AMV",
+            `Equipamento ${sw.id} sem comunicação`,
+          );
+        }
         break;
       }
       case "INTERDICAO": {
@@ -619,9 +572,24 @@ class SimulationEngine {
 
   setSegmentStatus(id: string, status: TrackSegment["status"]) {
     const segment = this.state.segments.find((s) => s.id === id);
-    if (!segment) return;
+    if (!segment || segment.status === status) return;
     segment.status = status;
     segment.lastUpdate = Date.now();
+    // Keep every restriction in the alert feed, including operator simulations.
+    this.state.alarms = this.state.alarms.map((alarm) =>
+      alarm.objectKind === "TRECHO" && alarm.objectId === id && !alarm.resolved
+        ? { ...alarm, resolved: true }
+        : alarm,
+    );
+    if (["BLOQUEADO", "MANUTENCAO", "FALHA", "SEM_COMUNICACAO"].includes(status)) {
+      this.raiseAlarm(
+        status,
+        status === "FALHA" ? "CRITICO" : status === "MANUTENCAO" ? "MEDIO" : "ALTO",
+        id,
+        "TRECHO",
+        `Trecho ${id} — ${status.replaceAll("_", " ").toLowerCase()}`,
+      );
+    }
     this.audit("Alteração de estado de trecho", id, `Confirmado ${status}`);
     this.log(`Trecho ${id} alterado para ${status}`, id, "TRECHO", "MEDIO");
     this.recompute();

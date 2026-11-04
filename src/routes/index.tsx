@@ -1,16 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { CcoHeader } from "@/components/cco/CcoHeader";
-import { ControlBar } from "@/components/cco/ControlBar";
 import { DetailPanel } from "@/components/cco/DetailPanel";
 import { RailwayMap, type MapFilters } from "@/components/cco/RailwayMap";
 import { BootScreen } from "@/components/cco/BootScreen";
 import { useCco, useHydrated } from "@/hooks/useCco";
 import { locateObject } from "@/lib/cco/locate";
 import { projectSchematicPoint } from "@/lib/cco/schematic-layout";
-import type { AccessLevel, SelectedObject, ViewMode } from "@/lib/cco/types";
+import type { AccessLevel, SelectedObject } from "@/lib/cco/types";
 import { DEFAULT_VIEWPORT, centerOn, zoomViewport, type Viewport } from "@/lib/cco/viewport";
-import { controlService } from "@/services";
 
 const TITLE = "Painel Sinótico CCO — ArcelorMittal Libéria";
 const DESCRIPTION =
@@ -44,9 +42,6 @@ function CcoPanel() {
   const state = useCco();
   const hydrated = useHydrated();
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<ViewMode>("OPERACIONAL");
-  const [filters, setFilters] = useState<MapFilters>(INITIAL_FILTERS);
-  const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<SelectedObject | null>(null);
   const [viewport, setViewport] = useState<Viewport>(DEFAULT_VIEWPORT);
   const [accessLevel, setAccessLevel] = useState<AccessLevel>("ADMINISTRADOR");
@@ -73,47 +68,17 @@ function CcoPanel() {
     [focus],
   );
 
-  const runSearch = useCallback(() => {
-    const term = search.trim().toUpperCase();
-    if (!term) return;
-    const train = state.trains.find(
-      (t) => t.id.includes(term) || t.prefix.toUpperCase().includes(term),
-    );
-    if (train) return selectAndFocus({ kind: "TREM", id: train.id });
-    const signal = state.signals.find((s) => s.id.toUpperCase().includes(term));
-    if (signal) return selectAndFocus({ kind: "SINAL", id: signal.id });
-    const station = state.stations.find(
-      (s) => s.name.toUpperCase().includes(term) || s.code.includes(term),
-    );
-    if (station) return selectAndFocus({ kind: "ESTACAO", id: station.id });
-    const sw = state.switches.find((s) => s.id.toUpperCase().includes(term));
-    if (sw) return selectAndFocus({ kind: "AMV", id: sw.id });
-    const yard = state.yards.find(
-      (item) => item.name.toUpperCase().includes(term) || item.id.toUpperCase().includes(term),
-    );
-    if (yard) return selectAndFocus({ kind: "PATIO", id: yard.id });
-    const segment = state.segments.find((s) => s.id.toUpperCase().includes(term));
-    if (segment) return selectAndFocus({ kind: "TRECHO", id: segment.id });
-    const km = Number(term.replace(/[^0-9]/g, ""));
-    if (!Number.isNaN(km) && km > 0) {
-      const byKm = state.segments.find((s) => km >= s.startKm && km <= s.endKm);
-      if (byKm) selectAndFocus({ kind: "TRECHO", id: byKm.id });
-    }
-  }, [search, selectAndFocus, state]);
-
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        document.querySelector('[role="dialog"]') ||
+        (event.target instanceof HTMLElement &&
+          (event.target.matches("input, textarea, select") || event.target.isContentEditable))
+      )
+        return;
       const key = event.key;
-      if (key === "F1") {
-        event.preventDefault();
-        setViewMode("OPERACIONAL");
-      } else if (key === "F2") {
-        event.preventDefault();
-        setViewMode("ALARMES");
-      } else if (key === "F3") {
-        event.preventDefault();
-        setViewMode("INFRAESTRUTURA");
-      } else if (key === "F4") {
+      if (key === "F4") {
         event.preventDefault();
         navigate({ to: "/historico" });
       } else if (key === "+" || key === "=") {
@@ -124,13 +89,11 @@ function CcoPanel() {
         setSelected(null);
       } else if (key === "Home") {
         setViewport(DEFAULT_VIEWPORT);
-      } else if (key === "Enter" && document.activeElement?.tagName !== "INPUT") {
-        runSearch();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [navigate, runSearch]);
+  }, [navigate]);
 
   if (!hydrated) {
     return <BootScreen title={TITLE} subtitle={DESCRIPTION} />;
@@ -145,34 +108,16 @@ function CcoPanel() {
         accessLevel={accessLevel}
         onAccessLevelChange={setAccessLevel}
         criticalAlarms={state.kpis.criticalAlarms}
-      />
-      <ControlBar
-        viewMode={viewMode}
-        onViewMode={setViewMode}
-        filters={filters}
-        onFilters={setFilters}
-        search={search}
-        onSearch={setSearch}
-        running={state.running}
-        live={state.live}
-        scenario={state.scenario}
-        onStart={controlService.start}
-        onPause={controlService.pause}
-        onReset={() => {
-          controlService.reset();
-          setSelected(null);
-          setViewport(DEFAULT_VIEWPORT);
-        }}
-        onLive={controlService.setLive}
-        onScenario={(scenario) => controlService.setScenario(scenario)}
+        alarms={state.alarms}
+        onSelectAlert={selectAndFocus}
       />
 
       <main className="relative flex min-h-0 flex-1">
         <div className="min-h-0 min-w-0 flex-1">
           <RailwayMap
             state={state}
-            filters={filters}
-            viewMode={viewMode}
+            filters={INITIAL_FILTERS}
+            viewMode="OPERACIONAL"
             selected={selected}
             onSelect={(selection) =>
               selection.kind === "TREM" || selection.kind === "PATIO"

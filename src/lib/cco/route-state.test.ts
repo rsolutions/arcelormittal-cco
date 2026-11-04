@@ -8,6 +8,7 @@ import {
   yardTrackTone,
 } from "./route-state.ts";
 import { projectYardLayout } from "./yard-layouts.ts";
+import { simulatedSignalAspect } from "./simulation-aspect.ts";
 import type { Signal, TrackSegment, Yard } from "./types";
 
 const signal = (overrides: Partial<Signal> = {}): Signal => ({
@@ -62,6 +63,27 @@ const bleziSignals = yard.layout!.signals.map((item, index) =>
     anchor: item.anchor,
   }),
 );
+
+test("ordinary simulated traffic keeps signals and their routes blue", () => {
+  const occupied = { ...segment, status: "OCUPADO" as const, occupancy: "3021" };
+  const signals = bleziSignals.map((item) => ({
+    ...item,
+    aspect: simulatedSignalAspect(item, occupied),
+  }));
+  assert(signals.every((item) => item.aspect === "AZUL"));
+  assert(mainRouteSpans(occupied, signals).every((span) => span.tone === "AZUL"));
+  assert.equal(yardTrackTone(yard, 0, signals), "AZUL");
+  assert.equal(yardTrackTone(yard, 1, signals), "AZUL");
+});
+
+test("simulation still highlights explicit restrictions, failures and disconnections", () => {
+  for (const status of ["BLOQUEADO", "MANUTENCAO", "FALHA", "SEM_COMUNICACAO"] as const) {
+    assert.equal(simulatedSignalAspect(signal(), { ...segment, status }), "VERMELHO");
+  }
+  assert.equal(simulatedSignalAspect(signal({ status: "FALHA" }), segment), "VERMELHO");
+  assert.equal(simulatedSignalAspect(signal({ status: "OFFLINE" }), segment), "CINZA");
+  assert.equal(simulatedSignalAspect(signal(), undefined), "VERMELHO");
+});
 
 test("only disconnected equipment is shown as grey; a connected failure is red", () => {
   assert.equal(signalAspect(signal({ status: "OFFLINE", aspect: "AZUL" })), "CINZA");
