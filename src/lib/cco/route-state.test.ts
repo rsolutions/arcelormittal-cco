@@ -99,7 +99,7 @@ test("blue-to-blue is blue, a red indication withdraws the route, missing commun
   assert.equal(routeTone([]), "BRANCA");
 });
 
-test("main route is split at consecutive right-side signals, never at a siding signal", () => {
+test("one red main signal withdraws only its next westbound block, never the approach behind it", () => {
   const signals = [
     signal(),
     signal({
@@ -119,7 +119,7 @@ test("main route is split at consecutive right-side signals, never at a siding s
   const spans = mainRouteSpans(segment, signals);
   assert.deepEqual(
     spans.map((span) => span.tone),
-    ["AZUL", "BRANCA", "BRANCA", "AZUL"],
+    ["AZUL", "BRANCA", "AZUL", "AZUL"],
   );
   assert.deepEqual(
     spans.map((span) => span.points.map((point) => point.x)),

@@ -33,6 +33,7 @@ import type {
 
 const TICK_MS = 1000;
 const TIME_SCALE = 40; // simulated seconds per real second (visible movement)
+const DEFAULT_SCENARIO: ScenarioId = "FALHA_SINAL";
 
 let counter = 0;
 const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${(counter += 1)}`;
@@ -123,6 +124,7 @@ class SimulationEngine {
       this.routeOf.set(seed.id, ROUTES[seed.routeId]!);
       this.routeIdOf.set(seed.id, seed.routeId);
     });
+    this.applyScenario(DEFAULT_SCENARIO);
     this.recompute();
     this.log("Sistema CCO inicializado — dados simulados", "SISTEMA", "ALARME", "INFO");
   }
@@ -418,8 +420,9 @@ class SimulationEngine {
     const audit = this.state.audit;
     this.state = buildInitialState();
     this.state.audit = audit;
+    this.applyScenario(DEFAULT_SCENARIO);
     this.audit("Resetar simulação", "SISTEMA", "Confirmado");
-    this.log("Simulação reiniciada — cenário OPERAÇÃO NORMAL", "SISTEMA", "ALARME", "INFO");
+    this.log("Simulação reiniciada — um sinal vermelho em BLEZI", "SISTEMA", "ALARME", "INFO");
     this.recompute();
     this.emit();
   }
@@ -440,6 +443,14 @@ class SimulationEngine {
     this.state = buildInitialState();
     this.state.audit = audit;
     this.state.alarms = alarms.map((a) => ({ ...a, resolved: true }));
+    this.applyScenario(scenario);
+
+    this.audit(`Aplicar cenário ${scenario}`, "SISTEMA", "Confirmado");
+    this.recompute();
+    this.emit();
+  }
+
+  private applyScenario(scenario: ScenarioId) {
     this.state.scenario = scenario;
 
     switch (scenario) {
@@ -453,14 +464,20 @@ class SimulationEngine {
         break;
       }
       case "FALHA_SINAL": {
-        const signal = this.state.signals.find((s) => s.id === "S-105");
+        const signal = this.state.signals.find((s) => s.yardId === "PAT-BLE" && s.label === "1D");
         if (signal) {
           signal.status = "FALHA";
           signal.aspect = "VERMELHO";
-          signal.lastEvent = "Falha interna detectada";
+          signal.lastEvent = "Falha simulada — sinal 1D de BLEZI";
           signal.lastUpdate = Date.now();
+          this.raiseAlarm(
+            "FALHA_EQUIPAMENTO",
+            "CRITICO",
+            signal.id,
+            "SINAL",
+            `Falha simulada — BLEZI, sinal 1D (${signal.id})`,
+          );
         }
-        this.raiseAlarm("FALHA_EQUIPAMENTO", "CRITICO", "S-105", "SINAL", "Falha de sinal S-105");
         break;
       }
       case "TRECHO_OCUPADO": {
@@ -518,10 +535,6 @@ class SimulationEngine {
       default:
         break;
     }
-
-    this.audit(`Aplicar cenário ${scenario}`, "SISTEMA", "Confirmado");
-    this.recompute();
-    this.emit();
   }
 
   acknowledgeAlarm(id: string, operator = "ADMIN") {

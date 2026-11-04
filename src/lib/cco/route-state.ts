@@ -68,7 +68,10 @@ export function mainRouteSpans(segment: TrackSegment, signals: readonly Signal[]
     const middle = (x + nextX) / 2;
     const left = mainSignals.filter((signal) => signal.position.x <= middle).at(-1);
     const right = mainSignals.find((signal) => signal.position.x >= middle);
-    let tone = routeTone([left, right].filter((signal): signal is Signal => Boolean(signal)));
+    // Westbound: the signal on the right governs the block up to the next signal
+    // on its left. A red indication must not also withdraw the approach behind it.
+    const controlling = right ?? left;
+    let tone = routeTone(controlling ? [controlling] : []);
     if (["BLOQUEADO", "MANUTENCAO", "FALHA"].includes(segment.status)) tone = "BRANCA";
     if (segment.status === "SEM_COMUNICACAO") tone = "CINZA";
     const at = (px: number): Point => ({
