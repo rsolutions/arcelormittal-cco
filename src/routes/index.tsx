@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { AssistantCard } from "@/components/cco/AssistantCard";
 import { CcoHeader } from "@/components/cco/CcoHeader";
 import { ControlBar } from "@/components/cco/ControlBar";
 import { DetailPanel } from "@/components/cco/DetailPanel";
@@ -15,7 +14,7 @@ import { controlService } from "@/services";
 
 const TITLE = "Painel Sinótico CCO — ArcelorMittal Libéria";
 const DESCRIPTION =
-  "Painel sinótico ferroviário da ArcelorMittal Libéria com pátios, trens em movimento, sinais, AMVs, alarmes e simulação operacional.";
+  "Painel sinótico ferroviário da ArcelorMittal Libéria com pátios, rotas, sinais, AMVs e simulação operacional.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,7 +32,6 @@ export const Route = createFileRoute("/")({
 
 const INITIAL_FILTERS: MapFilters = {
   line: "ALL",
-  trains: true,
   stations: true,
   signals: true,
   switches: true,
@@ -57,9 +55,12 @@ function CcoPanel() {
     (selection: SelectedObject) => {
       const location = locateObject(state, selection.kind, selection.id);
       const point = location ? projectSchematicPoint(location) : null;
-      if (point) setViewport((current) => selection.kind === "PATIO"
-        ? { x: point.x - 200, y: point.y - 125, w: 400, h: 440 }
-        : centerOn(current, point, 620));
+      if (point)
+        setViewport((current) =>
+          selection.kind === "PATIO"
+            ? { x: point.x - 200, y: point.y - 125, w: 400, h: 440 }
+            : centerOn(current, point, 620),
+        );
     },
     [state],
   );
@@ -75,7 +76,9 @@ function CcoPanel() {
   const runSearch = useCallback(() => {
     const term = search.trim().toUpperCase();
     if (!term) return;
-    const train = state.trains.find((t) => t.id.includes(term) || t.prefix.toUpperCase().includes(term));
+    const train = state.trains.find(
+      (t) => t.id.includes(term) || t.prefix.toUpperCase().includes(term),
+    );
     if (train) return selectAndFocus({ kind: "TREM", id: train.id });
     const signal = state.signals.find((s) => s.id.toUpperCase().includes(term));
     if (signal) return selectAndFocus({ kind: "SINAL", id: signal.id });
@@ -172,7 +175,9 @@ function CcoPanel() {
             viewMode={viewMode}
             selected={selected}
             onSelect={(selection) =>
-              (selection.kind === "TREM" || selection.kind === "PATIO") ? selectAndFocus(selection) : setSelected(selection)
+              selection.kind === "TREM" || selection.kind === "PATIO"
+                ? selectAndFocus(selection)
+                : setSelected(selection)
             }
             viewport={viewport}
             onViewportChange={setViewport}
@@ -184,7 +189,6 @@ function CcoPanel() {
             aria-label="Informações do objeto selecionado"
             className="absolute inset-y-0 right-0 z-10 flex min-h-0 w-[min(340px,100%)] shrink-0 flex-col border-l border-border bg-surface shadow-xl sm:static sm:shadow-none 2xl:w-[380px]"
           >
-            <AssistantCard hints={state.assistant} />
             <div className="min-h-0 flex-1 overflow-hidden">
               <DetailPanel
                 state={state}

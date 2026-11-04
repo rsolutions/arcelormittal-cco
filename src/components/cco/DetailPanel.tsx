@@ -1,6 +1,7 @@
 import { Crosshair, X } from "lucide-react";
 import { formatClock, formatKm } from "@/lib/cco/geometry";
 import { LINE_LABELS } from "@/lib/cco/network";
+import { signalAspect, yardSignals } from "@/lib/cco/route-state";
 import type { AccessLevel, CcoState, SelectedObject } from "@/lib/cco/types";
 import { switchService, trackService } from "@/services";
 import { aspectColor, severityColor, severityLabel, switchColor, trackColor } from "./map/palette";
@@ -58,7 +59,9 @@ export function DetailPanel({
         ) : null}
 
         {selected?.kind === "TREM" ? <TrainDetails state={state} id={selected.id} /> : null}
-        {selected?.kind === "SINAL" ? <SignalDetails state={state} id={selected.id} /> : null}
+        {selected?.kind === "SINAL" ? (
+          <SignalDetails state={state} id={selected.id} onSelect={onSelect} />
+        ) : null}
         {selected?.kind === "ESTACAO" ? (
           <StationDetails state={state} id={selected.id} onSelect={onSelect} />
         ) : null}
@@ -68,7 +71,9 @@ export function DetailPanel({
         {selected?.kind === "TRECHO" ? (
           <SegmentDetails state={state} id={selected.id} canCommand={canCommand} />
         ) : null}
-        {selected?.kind === "PATIO" ? <YardDetails state={state} id={selected.id} /> : null}
+        {selected?.kind === "PATIO" ? (
+          <YardDetails state={state} id={selected.id} onSelect={onSelect} />
+        ) : null}
         {selected?.kind === "ALARME" ? (
           <AlarmDetails state={state} id={selected.id} onSelect={onSelect} />
         ) : null}
@@ -126,31 +131,47 @@ function TrainDetails({ state, id }: { state: CcoState; id: string }) {
   );
 }
 
-function SignalDetails({ state, id }: { state: CcoState; id: string }) {
+function SignalDetails({
+  state,
+  id,
+  onSelect,
+}: {
+  state: CcoState;
+  id: string;
+  onSelect: (selection: SelectedObject) => void;
+}) {
   const signal = state.signals.find((s) => s.id === id);
   if (!signal) return null;
+  const aspect = signalAspect(signal);
+  const yard = state.yards.find((item) => item.id === signal.yardId);
   return (
     <div className="space-y-2">
-      <Title label="Sinal / controladora" value={`SINAL ${signal.id}`} />
-      <Row label="Identificação no projeto" value={signal.label ?? signal.id} />
+      {yard ? (
+        <button
+          type="button"
+          onClick={() => onSelect({ kind: "PATIO", id: yard.id })}
+          className="font-mono text-[10px] text-primary hover:underline"
+        >
+          Voltar ao pátio {yard.name}
+        </button>
+      ) : null}
+      <Title label="Sinal / controladora" value={`SINAL ${signal.label ?? signal.id}`} />
+      <Row label="Identificação técnica" value={signal.id} />
+      {yard ? <Row label="Pátio" value={yard.name} /> : null}
       <div className="flex items-center gap-2 rounded border border-border bg-surface-2 px-3 py-2">
         <span
-          className="h-4 w-4 rounded-full lamp"
-          style={{ backgroundColor: aspectColor[signal.aspect], color: aspectColor[signal.aspect] }}
+          className={`h-4 w-4 rounded-full ${aspect === "VERMELHO" ? "signal-stop" : ""}`}
+          style={{ backgroundColor: aspectColor[aspect], color: aspectColor[aspect] }}
         />
-        <span className="font-mono text-sm font-semibold" style={{ color: aspectColor[signal.aspect] }}>
-          {signal.aspect}
+        <span className="font-mono text-sm font-semibold" style={{ color: aspectColor[aspect] }}>
+          {aspect}
         </span>
       </div>
       <Row label="Localização" value={formatKm(signal.km)} />
       <Row label="Sentido" value={signal.direction} />
       <Row label="Linha" value={LINE_LABELS[signal.line]} />
       <Row label="Protege o trecho" value={signal.protects} />
-      <Row
-        label="Comunicação"
-        value={signal.status}
-        color={signal.status === "ONLINE" ? "var(--state-clear)" : "var(--state-danger)"}
-      />
+      <Row label="Comunicação" value={signal.status} color={aspectColor[aspect]} />
       <Row label="Última atualização" value={formatClock(signal.lastUpdate || state.clock)} />
       <Row label="Último evento" value={signal.lastEvent} />
     </div>
@@ -248,7 +269,12 @@ function SwitchDetails({
     <div className="space-y-2">
       <Title label="AMV / desvio" value={item.id} color={switchColor[item.status]} />
       <Row label="Identificação no projeto" value={item.label ?? item.id} />
-      {item.crossoverType ? <Row label="Tipo" value={item.crossoverType === "MANUAL" ? "Manual Crossover" : "Spring Crossover"} /> : null}
+      {item.crossoverType ? (
+        <Row
+          label="Tipo"
+          value={item.crossoverType === "MANUAL" ? "Manual Crossover" : "Spring Crossover"}
+        />
+      ) : null}
       {item.yardName ? <Row label="Pátio" value={item.yardName} /> : null}
       <Row label="Localização" value={formatKm(item.km)} />
       <Row label="Linha" value={LINE_LABELS[item.line]} />
@@ -290,7 +316,11 @@ function SegmentDetails({
       <Row label="Descrição" value={segment.name} />
       <Row label="Linha" value={LINE_LABELS[segment.line]} />
       <Row label="Extensão" value={`${formatKm(segment.startKm)} → ${formatKm(segment.endKm)}`} />
-      <Row label="Estado" value={segment.status.replace("_", " ")} color={trackColor[segment.status]} />
+      <Row
+        label="Estado"
+        value={segment.status.replace("_", " ")}
+        color={trackColor[segment.status]}
+      />
       <Row label="Ocupação" value={segment.occupancy ? `Trem ${segment.occupancy}` : "Livre"} />
       <Row label="Velocidade máx." value={`${segment.speedLimit} km/h`} />
       <Row label="Última atualização" value={formatClock(segment.lastUpdate || state.clock)} />
@@ -311,15 +341,73 @@ function SegmentDetails({
   );
 }
 
-function YardDetails({ state, id }: { state: CcoState; id: string }) {
+function YardDetails({
+  state,
+  id,
+  onSelect,
+}: {
+  state: CcoState;
+  id: string;
+  onSelect: (selection: SelectedObject) => void;
+}) {
   const yard = state.yards.find((y) => y.id === id);
   if (!yard) return null;
+  const signals = yardSignals(yard, state.signals);
+  const offline = signals.some((signal) => signal.status === "OFFLINE");
+  const failed = signals.some((signal) => signal.status === "FALHA");
   return (
     <div className="space-y-2">
       <Title label="Pátio" value={yard.name.toUpperCase()} />
       <Row label="Localização" value={formatKm(yard.km)} />
-      <Row label="Linhas em uso" value={`${yard.tracksInUse}/${yard.tracksTotal}`} />
-      <Row label="Status" value="OPERACIONAL" color="var(--state-clear)" />
+      <Row
+        label="Status"
+        value={offline ? "COMUNICAÇÃO PARCIAL" : failed ? "FALHA DE EQUIPAMENTO" : "OPERACIONAL"}
+        color={offline ? "var(--route-gray)" : failed ? "var(--signal-red)" : "var(--route-blue)"}
+      />
+      <h3 className="tech-label pt-3">Sinais do pátio</h3>
+      <ul className="space-y-2">
+        {signals.map((signal) => {
+          const aspect = signalAspect(signal);
+          const color = aspectColor[aspect];
+          const route = signal.direction === "OESTE" ? "Via principal definida" : "Desvio definido";
+          return (
+            <li key={signal.id}>
+              <button
+                type="button"
+                onClick={() => onSelect({ kind: "SINAL", id: signal.id })}
+                aria-label={`Ver sinal ${signal.label ?? signal.id} do pátio ${yard.name}`}
+                className="w-full rounded border border-border bg-surface-2 p-3 text-left transition-colors hover:border-border-strong"
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`h-3 w-3 shrink-0 rounded-full ${aspect === "VERMELHO" ? "signal-stop" : ""}`}
+                    style={{ backgroundColor: color }}
+                  />
+                  <span className="font-mono text-sm font-semibold">
+                    {signal.label ?? signal.id}
+                  </span>
+                  <span className="ml-auto font-mono text-[10px] font-semibold" style={{ color }}>
+                    {aspect}
+                  </span>
+                </div>
+                <p className="mt-2 font-mono text-[10px] text-muted-foreground">
+                  {aspect === "AZUL"
+                        ? route
+                    : aspect === "CINZA"
+                      ? "Sem sinal do equipamento"
+                      : "Rota não definida"}
+                </p>
+                <div className="mt-2 flex justify-between gap-2 font-mono text-[9px] text-muted-foreground">
+                  <span>
+                    {signal.id} · {signal.status === "OFFLINE" ? "DESCONECTADO" : signal.status}
+                  </span>
+                  <span>{formatClock(signal.lastUpdate || state.clock)}</span>
+                </div>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -345,7 +433,10 @@ function AlarmDetails({
       <Row label="Descrição" value={alarm.description} />
       <Row label="Tipo" value={alarm.type.replace(/_/g, " ")} />
       <Row label="Horário" value={formatClock(alarm.timestamp)} />
-      <Row label="Reconhecido" value={alarm.acknowledged ? `Sim (${alarm.acknowledgedBy ?? "ADMIN"})` : "Não"} />
+      <Row
+        label="Reconhecido"
+        value={alarm.acknowledged ? `Sim (${alarm.acknowledgedBy ?? "ADMIN"})` : "Não"}
+      />
       <Row label="Resolvido" value={alarm.resolved ? "Sim" : "Não"} />
       <button
         type="button"

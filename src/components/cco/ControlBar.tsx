@@ -23,7 +23,6 @@ const LINES: { id: MapFilters["line"]; label: string }[] = [
 ];
 
 const TOGGLES: { key: keyof MapFilters; label: string }[] = [
-  { key: "trains", label: "Trens" },
   { key: "stations", label: "Pátios" },
   { key: "signals", label: "Sinais" },
   { key: "switches", label: "AMVs" },

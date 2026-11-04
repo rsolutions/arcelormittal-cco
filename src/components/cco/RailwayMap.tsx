@@ -1,24 +1,22 @@
 import { Crosshair, Maximize2, Minus, Plus } from "lucide-react";
 import { useCallback, useId, useRef, useState } from "react";
 import { locateObject } from "@/lib/cco/locate";
-import { projectSchematicPoint, SCHEMATIC_ROWS } from "@/lib/cco/schematic-layout";
+import { SCHEMATIC_ROWS } from "@/lib/cco/schematic-layout";
+import { mainRouteSpans, signalAspect, yardTrackTone } from "@/lib/cco/route-state";
 import type { CcoState, SelectedObject, ViewMode } from "@/lib/cco/types";
 import { DEFAULT_VIEWPORT, viewBoxString, zoomViewport, type Viewport } from "@/lib/cco/viewport";
 import {
   AlarmMarker,
-  KilometerMarker,
   SignalLamp,
   StationNode,
   SwitchNode,
   TrackSegmentShape,
-  TrainMarker,
   YardShape,
 } from "./map/MapElements";
-import { severityColor } from "./map/palette";
+import { aspectColor } from "./map/palette";
 
 export interface MapFilters {
   line: "ALL" | "L1" | "L2" | "RN";
-  trains: boolean;
   stations: boolean;
   signals: boolean;
   switches: boolean;
@@ -96,10 +94,8 @@ export function RailwayMap({
   };
 
   const detailed = viewport.w < 1000;
-  const activeAlarms = state.alarms.filter((a) => !a.resolved);
-  const showTrains = filters.trains && viewMode !== "ALARMES";
+  const activeAlarms = state.alarms.filter((a) => !a.resolved && a.objectKind !== "TREM");
   const dimNonAlarm = viewMode === "ALARMES";
-  const dimTrains = viewMode === "INFRAESTRUTURA";
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-background" ref={containerRef}>
@@ -162,6 +158,9 @@ export function RailwayMap({
                   <YardShape
                     key={yard.id}
                     yard={yard}
+                    trackTones={(yard.layout?.tracks ?? []).map((_, index) =>
+                      yardTrackTone(yard, index, state.signals),
+                    )}
                     detailed={detailed}
                     selected={isSelected("PATIO", yard.id)}
                     onSelect={() => onSelect({ kind: "PATIO", id: yard.id })}
@@ -177,6 +176,7 @@ export function RailwayMap({
                   <TrackSegmentShape
                     key={segment.id}
                     segment={segment}
+                    spans={mainRouteSpans(segment, state.signals)}
                     selected={isSelected("TRECHO", segment.id)}
                     dimmed={dimNonAlarm && segment.status === "NORMAL"}
                     onSelect={() => onSelect({ kind: "TRECHO", id: segment.id })}
@@ -239,46 +239,26 @@ export function RailwayMap({
                     />
                   ))}
 
-              {/* trains */}
-              {showTrains &&
-                state.trains
-                  .filter((t) => inLine(t.line))
-                  .map((train) => (
-                    <TrainMarker
-                      key={train.id}
-                      train={train}
-                      segment={state.segments.find((s) => s.id === train.segmentId)}
-                      selected={isSelected("TREM", train.id)}
-                      dimmed={dimTrains}
-                      onSelect={() => onSelect({ kind: "TREM", id: train.id })}
-                      onHover={handleHover}
-                    />
-                  ))}
-
               {/* alarm markers */}
               {filters.alarms &&
                 activeAlarms.slice(0, 12).map((alarm) => {
                   const position = locateObject(state, alarm.objectKind, alarm.objectId);
                   if (!position) return null;
+                  const signal =
+                    alarm.objectKind === "SINAL"
+                      ? state.signals.find((item) => item.id === alarm.objectId)
+                      : undefined;
                   return (
                     <AlarmMarker
                       key={alarm.id}
                       position={position}
-                      color={severityColor[alarm.severity]}
+                      color={signal ? aspectColor[signalAspect(signal)] : "var(--route-white)"}
                       critical={alarm.severity === "CRITICO"}
                     />
                   );
                 })}
             </g>
           </g>
-        ))}
-
-        {/* Keep boundary labels whole instead of clipping them at the row break. */}
-        {state.markers.map((marker, i) => (
-          <KilometerMarker
-            key={`${marker.km}-${i}`}
-            marker={{ ...marker, position: projectSchematicPoint(marker.position) }}
-          />
         ))}
 
         {SCHEMATIC_ROWS.map((row, index) => {
@@ -308,16 +288,6 @@ export function RailwayMap({
               >
                 A
               </text>
-              <path
-                d={
-                  index === 0
-                    ? `M ${x - 34} ${y - 5} L ${x - 26} ${y} L ${x - 34} ${y + 5}`
-                    : `M ${x + 26} ${y - 5} L ${x + 34} ${y} L ${x + 26} ${y + 5}`
-                }
-                fill="none"
-                stroke="var(--state-info)"
-                strokeWidth={2}
-              />
             </g>
           );
         })}
@@ -355,18 +325,6 @@ export function RailwayMap({
       >
         Visão geral
       </button>
-
-      <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-x-4 gap-y-1 rounded border border-border bg-surface/90 px-3 py-2">
-        <span className="font-mono text-[9px] text-muted-foreground">SC1 · Spring Crossover</span>
-        <span className="font-mono text-[9px] text-muted-foreground">MC1 · Manual Crossover</span>
-        <Legend color="var(--rail)" label="Normal" />
-        <Legend color="var(--state-danger)" label="Ocupado" />
-        <Legend color="var(--state-maint)" label="Manutenção" />
-        <Legend color="var(--state-high)" label="Falha" />
-        <Legend color="var(--state-offline)" label="Sem comunicação" />
-        <Legend color="var(--state-clear)" label="Sinal liberado" />
-        <Legend color="var(--state-caution)" label="Sinal atenção" />
-      </div>
 
       {tooltip ? (
         <div
@@ -409,16 +367,5 @@ function MapButton({
     >
       {children}
     </button>
-  );
-}
-
-function Legend({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className="h-1.5 w-4 rounded-full" style={{ backgroundColor: color }} />
-      <span className="font-mono text-[9px] tracking-wider text-muted-foreground uppercase">
-        {label}
-      </span>
-    </span>
   );
 }

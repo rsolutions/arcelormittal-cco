@@ -5,23 +5,29 @@ import type {
   TrackStatus,
   TrainStatus,
 } from "@/lib/cco/types";
+import type { RouteTone } from "@/lib/cco/route-state";
+
+export const routeColor: Record<RouteTone, string> = {
+  AZUL: "var(--route-blue)",
+  BRANCA: "var(--route-white)",
+  CINZA: "var(--route-gray)",
+};
 
 /** All map colors resolve to design-system state tokens. */
 export const trackColor: Record<TrackStatus, string> = {
-  NORMAL: "var(--state-info)",
-  OCUPADO: "var(--state-danger)",
-  BLOQUEADO: "var(--state-offline)",
-  MANUTENCAO: "var(--state-maint)",
-  FALHA: "var(--state-high)",
-  SEM_COMUNICACAO: "var(--state-offline)",
+  NORMAL: "var(--route-blue)",
+  OCUPADO: "var(--route-white)",
+  BLOQUEADO: "var(--route-white)",
+  MANUTENCAO: "var(--route-white)",
+  FALHA: "var(--route-white)",
+  SEM_COMUNICACAO: "var(--route-gray)",
 };
 
 /** Signals and switch sensors communicate in blue (livre) or red (restrição). */
 export const aspectColor: Record<SignalAspect, string> = {
-  VERDE: "var(--state-info)",
-  AMARELO: "var(--state-danger)",
-  VERMELHO: "var(--state-danger)",
-  CINZA: "var(--state-offline)",
+  AZUL: "var(--route-blue)",
+  VERMELHO: "var(--signal-red)",
+  CINZA: "var(--route-gray)",
 };
 
 export const switchColor: Record<SwitchStatus, string> = {

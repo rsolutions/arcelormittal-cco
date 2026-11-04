@@ -86,6 +86,10 @@
   --state-maint: oklch(0.68 0.13 300);
   --rail: oklch(0.62 0.012 250);
   --rail-dim: oklch(0.34 0.01 250);
+  --route-blue: #27b7f5;
+  --route-white: #f4f7fb;
+  --route-gray: #7f8996;
+  --signal-red: #ff2547;
 }
 
 @layer base {
@@ -151,13 +155,26 @@
   }
 }
 
-@keyframes cco-dash {
-  to {
-    stroke-dashoffset: -24;
+@utility signal-stop {
+  filter: drop-shadow(0 0 7px var(--signal-red)) drop-shadow(0 0 14px var(--signal-red));
+}
+
+@utility signal-stop-halo {
+  animation: cco-stop-halo 2s ease-in-out infinite;
+}
+
+@keyframes cco-stop-halo {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
-@utility occupied-flow {
-  stroke-dasharray: 10 6;
-  animation: cco-dash 1.2s linear infinite;
+@media (prefers-reduced-motion: reduce) {
+  .signal-stop-halo {
+    animation: none;
+  }
 }

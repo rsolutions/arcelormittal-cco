@@ -223,7 +223,7 @@ class SimulationEngine {
   }
 
   private moveTrains() {
-    const dtHours = (TICK_MS / 1000) * TIME_SCALE / 3600;
+    const dtHours = ((TICK_MS / 1000) * TIME_SCALE) / 3600;
     this.state.trains.forEach((train) => {
       const route = this.routeOf.get(train.id)!;
       const step = route[train.routeIndex]!;
@@ -269,7 +269,10 @@ class SimulationEngine {
           "TREM",
           "INFO",
         );
-        this.publish("TRACK_OCCUPANCY_CHANGED", { segmentId: newStep.segmentId, trainId: train.id });
+        this.publish("TRACK_OCCUPANCY_CHANGED", {
+          segmentId: newStep.segmentId,
+          trainId: train.id,
+        });
       }
 
       const activeStep = route[train.routeIndex]!;
@@ -384,7 +387,9 @@ class SimulationEngine {
 
     this.state.switches.forEach((sw) => {
       if (sw.status === "FALHA" || sw.status === "SEM_COMUNICACAO") return;
-      const near = this.state.trains.find((t) => Math.abs(t.km - sw.km) < 1.5 && t.line === sw.line);
+      const near = this.state.trains.find(
+        (t) => Math.abs(t.km - sw.km) < 1.5 && t.line === sw.line,
+      );
       sw.occupancy = near ? near.id : null;
       sw.status = near ? "OCUPADO" : sw.position;
     });
@@ -443,14 +448,11 @@ class SimulationEngine {
     if (signal.status === "OFFLINE") return "CINZA";
     if (signal.status === "FALHA") return "VERMELHO";
     const protects = this.state.segments.find((s) => s.id === signal.protects);
-    if (!protects) return "VERDE";
+    if (!protects) return "VERMELHO";
     if (protects.status === "OCUPADO" || protects.status === "BLOQUEADO") return "VERMELHO";
     if (protects.status === "MANUTENCAO" || protects.status === "FALHA") return "VERMELHO";
-    const occupiedAhead = this.state.segments.find(
-      (s) => s.line === protects.line && s.startKm > protects.endKm && s.status === "OCUPADO",
-    );
-    if (occupiedAhead && occupiedAhead.startKm - protects.endKm < 20) return "AMARELO";
-    return "VERDE";
+    if (protects.status === "SEM_COMUNICACAO") return "VERMELHO";
+    return "AZUL";
   }
 
   // ----- operator commands ----------------------------------------------
@@ -480,7 +482,11 @@ class SimulationEngine {
 
   setLive(live: boolean) {
     this.state.live = live;
-    this.audit(live ? "Ativar simulação ao vivo" : "Desativar simulação ao vivo", "SISTEMA", "Confirmado");
+    this.audit(
+      live ? "Ativar simulação ao vivo" : "Desativar simulação ao vivo",
+      "SISTEMA",
+      "Confirmado",
+    );
     this.emit();
   }
 
@@ -531,6 +537,7 @@ class SimulationEngine {
           signal.status = "OFFLINE";
           signal.aspect = "CINZA";
           signal.lastEvent = "Perda de comunicação";
+          signal.lastUpdate = Date.now();
         }
         const sw = this.state.switches.find((s) => s.id === "AMV-07");
         if (sw) sw.status = "SEM_COMUNICACAO";

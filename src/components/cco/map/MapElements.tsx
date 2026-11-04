@@ -1,4 +1,5 @@
 import { pathFrom, pointAt, headingAt, formatKm } from "@/lib/cco/geometry";
+import { signalAspect, type RouteSpan, type RouteTone } from "@/lib/cco/route-state";
 import type {
   KmMarker,
   RailSwitch,
@@ -8,7 +9,7 @@ import type {
   Train,
   Yard,
 } from "@/lib/cco/types";
-import { aspectColor, switchColor, trackColor, trainColor } from "./palette";
+import { aspectColor, routeColor, switchColor, trainColor } from "./palette";
 
 export interface MapItemProps {
   onSelect: () => void;
@@ -25,22 +26,20 @@ export function TrackSegmentShape({
   onHover,
   selected,
   dimmed,
-}: MapItemProps & { segment: TrackSegment }) {
+  spans,
+}: MapItemProps & { segment: TrackSegment; spans: RouteSpan[] }) {
   const d = pathFrom(segment.points);
-  const color = trackColor[segment.status];
-  const occupied = segment.status === "OCUPADO";
   return (
     <g
       opacity={dimmed ? 0.35 : 1}
       className="cursor-pointer"
+      data-track={segment.id}
       onClick={onSelect}
       onMouseMove={(e) =>
         onHover(
           [
             `TRECHO ${segment.id}`,
-            segment.name,
             `Estado: ${segment.status.replace("_", " ")}`,
-            `VMA: ${segment.speedLimit} km/h`,
             segment.occupancy ? `Ocupado por: Trem ${segment.occupancy}` : "Sem ocupação",
           ],
           e,
@@ -49,35 +48,17 @@ export function TrackSegmentShape({
       onMouseLeave={() => onHover(null)}
     >
       <path d={d} stroke="transparent" strokeWidth={16} fill="none" />
-      <path d={d} stroke="var(--rail-dim)" strokeWidth={9} fill="none" strokeLinecap="round" />
-      <path
-        d={d}
-        stroke={color}
-        strokeWidth={selected ? 7 : 5}
-        fill="none"
-        strokeLinecap="round"
-        className={occupied ? "occupied-flow" : undefined}
-        strokeDasharray={
-          segment.status === "BLOQUEADO" || segment.status === "MANUTENCAO" ? "6 6" : undefined
-        }
-      />
-      {selected ? (
-        <path d={d} stroke="var(--foreground)" strokeWidth={1} fill="none" strokeDasharray="2 4" />
-      ) : null}
-      {segment.status === "NORMAL"
-        ? [0.3, 0.7].map((t) => {
-            const pt = pointAt(segment.points, t);
-            return (
-              <polygon
-                key={t}
-                points={`${pt.x - 5},${pt.y} ${pt.x + 2},${pt.y - 4} ${pt.x + 2},${pt.y + 4}`}
-                fill="var(--foreground)"
-                opacity={0.6}
-                pointerEvents="none"
-              />
-            );
-          })
-        : null}
+      {spans.map((span, index) => (
+        <path
+          key={index}
+          d={pathFrom(span.points)}
+          stroke={routeColor[span.tone]}
+          data-route-state={span.tone}
+          strokeWidth={selected ? 7 : 5}
+          fill="none"
+          strokeLinecap="round"
+        />
+      ))}
     </g>
   );
 }
@@ -91,22 +72,24 @@ export function SignalLamp({
   dimmed,
   detailed,
 }: MapItemProps & { signal: Signal }) {
-  const color = aspectColor[signal.aspect];
-  const critical = signal.status === "FALHA";
+  const aspect = signalAspect(signal);
+  const color = aspectColor[aspect];
+  const stop = aspect === "VERMELHO";
+  const radius = stop ? 11 : 6;
   return (
     <g
-      opacity={dimmed ? 0.4 : 1}
+      opacity={dimmed && aspect === "AZUL" ? 0.55 : 1}
       className="cursor-pointer"
       data-signal={signal.id}
-      aria-label={`Sinal ${signal.label ?? signal.id}`}
+      data-aspect={aspect}
+      aria-label={`Sinal ${signal.label ?? signal.id} — ${aspect}`}
       onClick={onSelect}
       onMouseMove={(e) =>
         onHover(
           [
             `SINAL ${signal.id}`,
             `Projeto: ${signal.label ?? signal.id}`,
-            formatKm(signal.km),
-            `Aspecto: ${signal.aspect}`,
+            `Aspecto: ${aspect}`,
             `Sentido: ${signal.direction}`,
             `Comunicação: ${signal.status}`,
           ],
@@ -119,36 +102,57 @@ export function SignalLamp({
         x1={signal.position.x}
         y1={signal.position.y}
         x2={signal.position.x}
-        y2={signal.anchor?.y ?? (signal.position.y > 320 ? signal.position.y - 14 : signal.position.y + 14)}
+        y2={
+          signal.anchor?.y ??
+          (signal.position.y > 320 ? signal.position.y - 14 : signal.position.y + 14)
+        }
         stroke="var(--border-strong)"
         strokeWidth={1.5}
       />
+      {stop ? (
+        <circle
+          cx={signal.position.x}
+          cy={signal.position.y}
+          r={17}
+          fill={color}
+          fillOpacity={0.16}
+          stroke={color}
+          strokeOpacity={0.5}
+          strokeWidth={1.5}
+          className="signal-stop-halo"
+        />
+      ) : null}
       <circle
         cx={signal.position.x}
         cy={signal.position.y}
-        r={selected ? 8 : 6}
+        r={radius + (selected ? 3 : 1.5)}
         fill="var(--background)"
-        stroke="var(--border-strong)"
+        stroke={stop ? color : "var(--border-strong)"}
         strokeWidth={1.5}
       />
       <circle
         cx={signal.position.x}
         cy={signal.position.y}
-        r={4}
+        r={stop ? 8.5 : 4.5}
         fill={color}
         color={color}
-        className={critical ? "lamp-strong pulse-critical" : "lamp"}
+        className={stop ? "signal-stop" : aspect === "CINZA" ? undefined : "lamp"}
       />
-      {signal.label || detailed || selected ? <text
-        x={signal.labelPoint?.x ?? signal.position.x}
-        y={signal.labelPoint?.y ?? signal.position.y + (signal.position.y < 320 ? -12 : 18)}
-        textAnchor="middle"
-        fontSize={9}
-        fontFamily="var(--font-mono)"
-        fill="var(--muted-foreground)"
-      >
-        {signal.label ?? signal.id}
-      </text> : null}
+      {signal.label || detailed || selected ? (
+        <text
+          x={signal.labelPoint?.x ?? signal.position.x}
+          y={
+            (signal.labelPoint?.y ?? signal.position.y + (signal.position.y < 320 ? -12 : 18)) +
+            (stop ? (signal.direction === "LESTE" ? 5 : -5) : 0)
+          }
+          textAnchor="middle"
+          fontSize={stop ? 12 : 11}
+          fontFamily="var(--font-mono)"
+          fill={stop ? "var(--route-white)" : "var(--muted-foreground)"}
+        >
+          {signal.label ?? signal.id}
+        </text>
+      ) : null}
     </g>
   );
 }
@@ -259,42 +263,69 @@ export function SwitchNode({
       }
       onMouseLeave={() => onHover(null)}
     >
-      <rect x={(item.symbolPoint?.x ?? item.point.x) - 9}
-        y={(item.symbolPoint?.y ?? item.point.y) - 20} width={18} height={38} fill="transparent" />
-      {!item.symbolPoint ? <line
-        x1={item.point.x}
-        y1={item.point.y}
-        x2={item.branch.x}
-        y2={item.branch.y}
-        stroke={color}
-        strokeWidth={item.position === "REVERSO" ? 4 : 2}
-        strokeLinecap="round"
-      /> : null}
-      {item.symbolPoint ? <g transform={`translate(${item.symbolPoint.x} ${item.symbolPoint.y})`}>
-        <rect x={-5} y={-3} width={10} height={6} fill="var(--background)" stroke={color} strokeWidth={1.2} />
-        <path d={item.crossoverType === "MANUAL" ? "M -3 5 H 3" : "M 0 4 V 7 L -2 8 L 2 10 L -2 12 L 2 14"}
-          fill="none" stroke={color} strokeWidth={1} />
-      </g> : null}
+      <rect
+        x={(item.symbolPoint?.x ?? item.point.x) - 9}
+        y={(item.symbolPoint?.y ?? item.point.y) - 20}
+        width={18}
+        height={38}
+        fill="transparent"
+      />
+      {!item.symbolPoint ? (
+        <line
+          x1={item.point.x}
+          y1={item.point.y}
+          x2={item.branch.x}
+          y2={item.branch.y}
+          stroke={color}
+          strokeWidth={item.position === "REVERSO" ? 4 : 2}
+          strokeLinecap="round"
+        />
+      ) : null}
+      {item.symbolPoint ? (
+        <g transform={`translate(${item.symbolPoint.x} ${item.symbolPoint.y})`}>
+          <rect
+            x={-5}
+            y={-3}
+            width={10}
+            height={6}
+            fill="var(--background)"
+            stroke={color}
+            strokeWidth={1.2}
+          />
+          <path
+            d={
+              item.crossoverType === "MANUAL"
+                ? "M -3 5 H 3"
+                : "M 0 4 V 7 L -2 8 L 2 10 L -2 12 L 2 14"
+            }
+            fill="none"
+            stroke={color}
+            strokeWidth={1}
+          />
+        </g>
+      ) : null}
       <circle
         cx={item.symbolPoint?.x ?? item.point.x}
         cy={item.symbolPoint?.y ?? item.point.y}
-        r={item.symbolPoint ? (selected ? 2.5 : 1.5) : (selected ? 6 : 4.5)}
+        r={item.symbolPoint ? (selected ? 2.5 : 1.5) : selected ? 6 : 4.5}
         fill={color}
         stroke={selected ? "var(--foreground)" : "var(--background)"}
         strokeWidth={1.5}
         color={color}
         className={item.status === "FALHA" ? "lamp-strong pulse-critical" : "lamp"}
       />
-      {item.label || detailed || selected ? <text
-        x={item.labelPoint?.x ?? item.branch.x + 6}
-        y={item.labelPoint?.y ?? item.branch.y + 4}
-        textAnchor={item.labelPoint ? "middle" : "start"}
-        fontSize={8}
-        fontFamily="var(--font-mono)"
-        fill="var(--muted-foreground)"
-      >
-        {item.label ?? item.id}
-      </text> : null}
+      {item.label || detailed || selected ? (
+        <text
+          x={item.labelPoint?.x ?? item.branch.x + 6}
+          y={item.labelPoint?.y ?? item.branch.y + 4}
+          textAnchor={item.labelPoint ? "middle" : "start"}
+          fontSize={8}
+          fontFamily="var(--font-mono)"
+          fill="var(--muted-foreground)"
+        >
+          {item.label ?? item.id}
+        </text>
+      ) : null}
     </g>
   );
 }
@@ -373,37 +404,61 @@ export function TrainMarker({
 }
 
 /** Yard geometry, device placement and dimensions share the PDF layout. */
-export function YardShape({ yard, onSelect, onHover, selected, detailed }: MapItemProps & { yard: Yard }) {
+export function YardShape({
+  yard,
+  onSelect,
+  onHover,
+  selected,
+  detailed,
+  trackTones,
+}: MapItemProps & { yard: Yard; trackTones: RouteTone[] }) {
   const layout = yard.layout;
   const tracks = layout?.tracks ?? [yard.siding ?? []];
-  const label = layout?.labelPoint ?? { x: yard.position.x + yard.width / 2, y: yard.position.y + 142 };
+  const label = layout?.labelPoint ?? {
+    x: yard.position.x + yard.width / 2,
+    y: yard.position.y + 142,
+  };
   return (
-    <g className="cursor-pointer" data-yard={yard.id} role="button" aria-label={`Pátio ${yard.name}`}
-      onClick={onSelect} onMouseMove={(event) => onHover([yard.name, `Projeto AML · folha ${layout?.sheet ?? "—"}`, formatKm(yard.km)], event)}
-      onMouseLeave={() => onHover(null)}>
-      <rect x={yard.position.x} y={yard.position.y - 110} width={yard.width} height={380} fill="transparent" />
-      {tracks.map((points, index) => <g key={index}>
-        <path d={pathFrom(points)} stroke="transparent" strokeWidth={20} fill="none" />
-        <path d={pathFrom(points)} stroke="var(--rail-dim)" strokeWidth={5} fill="none" />
-        <path d={pathFrom(points)} stroke="var(--state-info)" strokeWidth={selected ? 4 : 3} fill="none" />
-      </g>)}
-      <text x={label.x} y={label.y} textAnchor="middle" fontSize={detailed ? 12 : 22}
-        fontFamily="var(--font-mono)" fontWeight={600} fill={selected ? "var(--foreground)" : "var(--muted-foreground)"}>
+    <g
+      className="cursor-pointer"
+      data-yard={yard.id}
+      role="button"
+      aria-label={`Pátio ${yard.name}`}
+      onClick={onSelect}
+      onMouseMove={(event) => onHover([yard.name], event)}
+      onMouseLeave={() => onHover(null)}
+    >
+      <rect
+        x={yard.position.x}
+        y={yard.position.y - 110}
+        width={yard.width}
+        height={380}
+        fill="transparent"
+      />
+      {tracks.map((points, index) => (
+        <g key={index} data-yard-track={index} data-route-state={trackTones[index] ?? "BRANCA"}>
+          <path d={pathFrom(points)} stroke="transparent" strokeWidth={20} fill="none" />
+          <path d={pathFrom(points)} stroke="var(--rail-dim)" strokeWidth={5} fill="none" />
+          <path
+            d={pathFrom(points)}
+            stroke={routeColor[trackTones[index] ?? "BRANCA"]}
+            strokeWidth={selected ? 5 : 4}
+            strokeLinecap="round"
+            fill="none"
+          />
+        </g>
+      ))}
+      <text
+        x={label.x}
+        y={label.y}
+        textAnchor="middle"
+        fontSize={detailed ? 12 : 22}
+        fontFamily="var(--font-mono)"
+        fontWeight={600}
+        fill={selected ? "var(--foreground)" : "var(--muted-foreground)"}
+      >
         {yard.name}
       </text>
-      {detailed && layout ? <g pointerEvents="none">
-        {layout.dimensions.map((dimension, index) => <g key={index} data-dimension={dimension.label}>
-          <line x1={dimension.from.x} y1={dimension.from.y} x2={dimension.to.x} y2={dimension.to.y} stroke="var(--muted-foreground)" strokeWidth={0.7} />
-          {[dimension.from, dimension.to].map((point, end) => <path key={end}
-            d={`M ${point.x} ${point.y - 4} L ${point.x} ${point.y + 4} M ${point.x + (end ? -4 : 4)} ${point.y - 3} L ${point.x} ${point.y} L ${point.x + (end ? -4 : 4)} ${point.y + 3}`}
-            stroke="var(--muted-foreground)" strokeWidth={0.7} fill="none" />)}
-          <text x={(dimension.from.x + dimension.to.x) / 2} y={dimension.from.y - 7}
-            textAnchor="middle" fontSize={9} fontFamily="var(--font-mono)" fill="var(--muted-foreground)">{dimension.label}</text>
-        </g>)}
-        <text x={label.x} y={label.y + 19} textAnchor="middle" fontSize={8} fontFamily="var(--font-mono)" fill="var(--muted-foreground)">
-          AML-SIG-MKS-0001 · FOLHA {layout.sheet}/13 · S/E
-        </text>
-      </g> : null}
     </g>
   );
 }
@@ -454,7 +509,6 @@ export function AlarmMarker({
         color={color}
         className={critical ? "lamp-strong pulse-critical" : "lamp"}
       />
-      <polygon points="0,-19 5,-10 -5,-10" fill={color} />
     </g>
   );
 }

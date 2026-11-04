@@ -11,14 +11,9 @@ export type LineId = "L1" | "L2" | "RN";
 export type Direction = "NORTE" | "SUL" | "LESTE" | "OESTE";
 
 export type TrackStatus =
-  | "NORMAL"
-  | "OCUPADO"
-  | "BLOQUEADO"
-  | "MANUTENCAO"
-  | "FALHA"
-  | "SEM_COMUNICACAO";
+  "NORMAL" | "OCUPADO" | "BLOQUEADO" | "MANUTENCAO" | "FALHA" | "SEM_COMUNICACAO";
 
-export type SignalAspect = "VERDE" | "AMARELO" | "VERMELHO" | "CINZA";
+export type SignalAspect = "AZUL" | "VERMELHO" | "CINZA";
 
 export type DeviceStatus = "ONLINE" | "OFFLINE" | "FALHA";
 
@@ -56,6 +51,7 @@ export interface TrackSegment {
 
 export interface Signal {
   id: string;
+  yardId: string;
   label?: string;
   anchor?: Point;
   labelPoint?: Point;
@@ -116,8 +112,22 @@ export interface Yard {
 
 export interface YardLayout {
   tracks: Point[][];
-  switches: { point: Point; branch: Point; symbolPoint: Point; label: string; labelPoint: Point; crossoverType: "SPRING" | "MANUAL" }[];
-  signals: { label: string; point: Point; anchor: Point; labelPoint: Point; direction: Direction }[];
+  trackSignalLabels: string[][];
+  switches: {
+    point: Point;
+    branch: Point;
+    symbolPoint: Point;
+    label: string;
+    labelPoint: Point;
+    crossoverType: "SPRING" | "MANUAL";
+  }[];
+  signals: {
+    label: string;
+    point: Point;
+    anchor: Point;
+    labelPoint: Point;
+    direction: Direction;
+  }[];
   dimensions: { from: Point; to: Point; label: string }[];
   labelPoint: Point;
   sheet: number;
@@ -201,12 +211,7 @@ export interface Kpis {
 }
 
 export type ScenarioId =
-  | "NORMAL"
-  | "ATRASO"
-  | "FALHA_SINAL"
-  | "TRECHO_OCUPADO"
-  | "PERDA_COMUNICACAO"
-  | "INTERDICAO";
+  "NORMAL" | "ATRASO" | "FALHA_SINAL" | "TRECHO_OCUPADO" | "PERDA_COMUNICACAO" | "INTERDICAO";
 
 export interface CcoState {
   clock: number;
